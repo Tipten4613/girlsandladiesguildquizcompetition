@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Championship Leaderboard</title>
+  <link rel="stylesheet" href="scoreboard.css">
+  <script src="scoreboard.js" defer></script>
+</head>
+<body>
+  <header class="scoreboard-header">
+    <div class="header-inner">
+      <div class="header-title">
+        <span class="eyebrow">THE GRAND CHAMPIONSHIP</span>
+        <h1>Quiz Competition</h1>
+        <p>Girls and Ladies Guild / Boys Samuel Mission</p>
+      </div>
+      <a class="home-link" href="index.html">← Home</a>
+    </div>
+  </header>
+
+  <main class="scoreboard-container">
+    <section class="scoreboard-panel">
+      <nav class="scoreboard-tabs" aria-label="Scoreboard categories">
+        <button class="category-tab active" data-category="bible">Bible</button>
+        <button class="category-tab" data-category="anglicanism">Anglicanism</button>
+        <button class="category-tab" data-category="current_affairs">Current Affairs</button>
+        <button class="category-tab" data-category="overall">🏆 Overall</button>
+      </nav>
+
+      <h2 id="selectedScoreboardTitle">Bible Scoreboard</h2>
+
+      <section id="championshipView" class="championship-view" aria-label="Top competitors">
+        <div class="side-leaderboard side-left">
+          <h3>★ LEADERBOARD</h3>
+          <div id="leftRanking" class="side-ranking"></div>
+        </div>
+
+        <div class="trophy-stage">
+          <div class="stage-glow"></div>
+          <div class="trophy-orbit"></div>
+          <div class="trophy-icon" aria-label="Championship trophy">🏆</div>
+          <div class="stage-caption">CHAMPIONSHIP</div>
+
+          <div class="podium" id="podium">
+            <div class="podium-place second-place" id="podiumSecond">
+              <div class="podium-person">🥈</div>
+              <div class="podium-name">—</div>
+              <div class="podium-score">0 marks</div>
+              <div class="podium-block"><span>2</span></div>
+            </div>
+
+            <div class="podium-place first-place" id="podiumFirst">
+              <div class="podium-person">👑</div>
+              <div class="podium-name">—</div>
+              <div class="podium-score">0 marks</div>
+              <div class="podium-block"><span>1</span></div>
+            </div>
+
+            <div class="podium-place third-place" id="podiumThird">
+              <div class="podium-person">🥉</div>
+              <div class="podium-name">—</div>
+              <div class="podium-score">0 marks</div>
+              <div class="podium-block"><span>3</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-leaderboard side-right">
+          <h3>🏅 TOP RANKINGS</h3>
+          <div id="rightRanking" class="side-ranking"></div>
+        </div>
+
+        <div class="bottom-rankings" id="bottomRankings"></div>
+      </section>
+
+      <div class="leaderboard-summary">
+        <span>📊 Competition standings</span>
+        <p id="scoreboardMessage">Loading results…</p>
+      </div>
+
+      <div class="table-heading">
+        <h3>Full Rankings</h3>
+        <span>All archdeaconries</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="scoreboardTable">
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Archdeaconry</th>
+              <th>Correct</th>
+              <th>Total Marks</th>
+            </tr>
+          </thead>
+          <tbody id="scoreboardBody"></tbody>
+        </table>
+      </div>
+
+      <button id="resetCompetitionBtn" class="reset-button" type="button">
+        Reset Competition
+      </button>
+    </section>
+  </main>
+
+  <footer class="scoreboard-footer">
+    <p>Excellence • Knowledge • Fellowship</p>
+    <span>Quiz Competition Championship</span>
+  </footer>
+</body>
+</html>

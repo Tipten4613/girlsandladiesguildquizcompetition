@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Quiz Questions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+    }
+
+    h1 {
+      color: #174a35;
+    }
+
+    input, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #174a35;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 15px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Import Quiz Questions</h1>
+    <p>Select your questions file in CSV format.</p>
+
+    <input type="file" id="csvFile" accept=".csv,text/csv">
+    <button id="importButton" type="button">Import Questions</button>
+
+    <p id="message">No file imported yet.</p>
+  </div>
+
+  <script src="import-questions.js"></script>
+</body>
+</html>
