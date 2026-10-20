@@ -140,9 +140,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Stop any previous reading before replaying.
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(
-      selectedQuestion.question
-    );
+    const spokenText =
+  "Question. " + selectedQuestion.question + ". " +
+  selectedQuestion.options.map((option, index) => {
+    const letter = ["A", "B", "C", "D"][index];
+    return `Option ${letter}. ${option}.`;
+  }).join(" ");
+
+const utterance = new SpeechSynthesisUtterance(spokenText);
 
     const voices = window.speechSynthesis.getVoices();
 
