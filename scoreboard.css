@@ -1,96 +1,96 @@
-/* Quiz Competition Scoreboard — responsive replacement */
+
+/* =========================================
+   CHAMPIONSHIP SCOREBOARD
+   Dark Gaming • Gold Trophy • Leaderboard
+========================================= */
+
 :root {
-  color-scheme: dark;
-  --navy-950: #080d18;
-  --navy-900: #10182a;
-  --navy-800: #17233a;
-  --panel: rgba(18, 29, 49, 0.92);
-  --panel-soft: rgba(255, 255, 255, 0.035);
-  --gold: #f4c95d;
-  --gold-light: #ffe8a1;
-  --text: #f7f8fc;
-  --muted: #aeb9cc;
-  --line: rgba(204, 218, 242, 0.13);
-  --radius: 18px;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --gold: #f6c744;
+  --gold-bright: #ffe69a;
+  --gold-dark: #a97817;
+  --navy: #080b15;
+  --panel: #111522;
+  --panel-light: #1b2030;
+  --white: #f8f7f1;
+  --muted: #a7adbd;
+  --border: rgba(246, 199, 68, 0.32);
 }
 
-* { box-sizing: border-box; }
-
-html { min-width: 320px; scroll-behavior: smooth; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
   min-height: 100vh;
-  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--white);
   background:
-    radial-gradient(ellipse at 50% -10%, rgba(244, 201, 93, 0.16), transparent 36rem),
-    radial-gradient(ellipse at 0% 45%, rgba(52, 91, 158, 0.14), transparent 34rem),
-    var(--navy-950);
-  line-height: 1.5;
+    radial-gradient(ellipse at 50% 0%, #3c2b0c 0%, transparent 36%),
+    radial-gradient(ellipse at 0% 60%, #151b31 0%, transparent 40%),
+    linear-gradient(145deg, #05060b, #101321 55%, #05060b);
 }
 
-button, a { -webkit-tap-highlight-color: transparent; }
-button { font: inherit; }
+/* HEADER */
 
 .scoreboard-header {
-  padding: 24px clamp(16px, 4vw, 42px);
-  border-bottom: 1px solid var(--line);
-  background: rgba(8, 13, 24, 0.78);
+  padding: 28px 24px;
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 11, 21, 0.98),
+    rgba(17, 21, 34, 0.88)
+  );
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
 }
 
 .header-inner {
-  width: min(1240px, 100%);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: min(1200px, 100%);
+  margin: auto;
+  display: flex;
   align-items: center;
-  gap: 18px;
+  justify-content: space-between;
+  gap: 24px;
 }
 
+.header-title {
+  text-align: left;
+}
 
-.header-title { min-width: 0; }
-.eyebrow, .section-kicker {
+.header-title .eyebrow {
   display: block;
+  margin-bottom: 8px;
   color: var(--gold);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 4px;
   text-transform: uppercase;
 }
 
 .header-title h1 {
-  margin: 3px 0 2px;
-  font-size: clamp(1.45rem, 3vw, 2.35rem);
-  line-height: 1.15;
-  letter-spacing: -0.035em;
+  margin: 0;
+  color: var(--gold-bright);
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
+  line-height: 1.2;
+  text-shadow: 0 0 22px rgba(246, 199, 68, 0.2);
 }
 
 .header-title p {
-  margin: 6px 0 0;
+  margin: 10px 0 0;
   color: var(--muted);
-  font-size: 0.94rem;
 }
 
 .home-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 10px 15px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.045);
+  flex-shrink: 0;
+  padding: 11px 20px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--gold-bright);
+  background: rgba(246, 199, 68, 0.06);
   text-decoration: none;
-  font-size: 0.9rem;
   font-weight: 700;
-  white-space: nowrap;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition: 0.2s ease;
 }
-.home-link:hover { border-color: var(--gold); background: rgba(244, 201, 93, 0.09); }
 
-.scoreboard-container {
-  width: min(1240px, calc(100% - 32px));
-  margin: 32px auto 48px;
-}
+.home-link:hover {
