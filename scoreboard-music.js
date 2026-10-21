@@ -10,48 +10,93 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  let youtubeReady = false;
   let started = false;
+  let isMuted = false;
+  let isPlaying = false;
+
+  // Load the YouTube player API.
+  const apiScript = document.createElement("script");
+  apiScript.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(apiScript);
+
+  window.onYouTubeIframeAPIReady = function () {
+    new YT.Player("championVideo", {
+      events: {
+        onReady(event) {
+          youtubeReady = true;
+          event.target.setVolume(70);
+          checkWinner();
+        },
+        onStateChange(event) {
+          isPlaying = event.data === YT.PlayerState.PLAYING;
+          playBtn.textContent = isPlaying
+            ? "⏸ Pause Champion Song"
+            : "▶ Play Champion Song";
+        }
+      }
+    });
+  };
+
+  let youtubePlayer;
+
+  window.onYouTubeIframeAPIReady = function () {
+    youtubePlayer = new YT.Player("championVideo", {
+      events: {
+        onReady(event) {
+          youtubeReady = true;
+          event.target.setVolume(70);
+          checkWinner();
+        },
+        onStateChange(event) {
+          isPlaying = event.data === YT.PlayerState.PLAYING;
+          playBtn.textContent = isPlaying
+            ? "⏸ Pause Champion Song"
+            : "▶ Play Champion Song";
+        }
+      }
+    });
+  };
 
   function winnerIsDisplayed() {
     return winner.textContent.trim().length > 0;
   }
 
   function checkWinner() {
+    if (!youtubeReady) return;
+
     if (winnerIsDisplayed() && !started) {
       started = true;
-      player.play().catch(() => {
-        playBtn.textContent = "▶ Play Champion Song";
-      });
-    }
-
-    if (!winnerIsDisplayed()) {
+      youtubePlayer.playVideo();
+    } else if (!winnerIsDisplayed() && started) {
       started = false;
-      player.pause();
+      youtubePlayer.stopVideo();
     }
   }
 
   playBtn.addEventListener("click", () => {
-    if (player.paused) {
-      player.play().catch(() => {});
+    if (!youtubeReady) return;
+
+    if (isPlaying) {
+      youtubePlayer.pauseVideo();
     } else {
-      player.pause();
+      youtubePlayer.playVideo();
     }
   });
 
   muteBtn.addEventListener("click", () => {
-    player.muted = !player.muted;
-    muteBtn.textContent = player.muted ? "🔊 Unmute" : "🔇 Mute";
-  });
+    if (!youtubeReady) return;
 
-  player.addEventListener("play", () => {
-    playBtn.textContent = "⏸ Pause Champion Song";
-  });
+    isMuted = !isMuted;
 
-  player.addEventListener("pause", () => {
-    playBtn.textContent = "▶ Play Champion Song";
+    if (isMuted) {
+      youtubePlayer.mute();
+      muteBtn.textContent = "🔊 Unmute";
+    } else {
+      youtubePlayer.unMute();
+      muteBtn.textContent = "🔇 Mute";
+    }
   });
-
-  checkWinner();
 
   new MutationObserver(checkWinner).observe(winner, {
     childList: true,
