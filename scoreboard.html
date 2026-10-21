@@ -38,37 +38,37 @@
       <h2 id="selectedScoreboardTitle">Bible Scoreboard</h2>
 
       <section id="championshipView" class="championship-view" aria-label="Top competitors">
-        <div class="podium-heading">
-          <span class="podium-heading-icon" aria-hidden="true">✦</span>
-          <div>
-            <h3>Championship podium</h3>
-            <p>Top three participating archdeaconries</p>
+        <aside class="side-leaderboard side-left">
+          <h3>★ LEADERBOARD</h3>
+          <div id="leftRanking" class="side-ranking"></div>
+        </aside>
+
+        <div class="trophy-stage">
+          <div class="stage-glow"></div>
+          <div class="trophy-orbit"></div>
+          <div class="trophy-icon" aria-label="Championship trophy">🏆</div>
+          <div class="stage-caption">CHAMPIONSHIP</div>
+          <div class="podium" id="podium">
+            <div class="podium-place second-place" id="podiumSecond">
+              <div class="podium-person">🥈</div><div class="podium-name">Awaiting competitor</div>
+              <div class="podium-score">0 marks</div><div class="podium-block"><span>2</span></div>
+            </div>
+            <div class="podium-place first-place" id="podiumFirst">
+              <div class="podium-person">👑</div><div class="podium-name">Awaiting competitor</div>
+              <div class="podium-score">0 marks</div><div class="podium-block"><span>1</span></div>
+            </div>
+            <div class="podium-place third-place" id="podiumThird">
+              <div class="podium-person">🥉</div><div class="podium-name">Awaiting competitor</div>
+              <div class="podium-score">0 marks</div><div class="podium-block"><span>3</span></div>
+            </div>
           </div>
         </div>
 
-        <div class="podium" id="podium">
-          <div class="podium-place second-place" id="podiumSecond">
-            <div class="podium-person" aria-hidden="true">🥈</div>
-            <div class="podium-name">Awaiting competitor</div>
-            <div class="podium-score">0 marks</div>
-            <div class="podium-block"><span>2</span></div>
-          </div>
-
-          <div class="podium-place first-place" id="podiumFirst">
-            <div class="podium-person" aria-hidden="true">👑</div>
-            <div class="podium-name">Awaiting competitor</div>
-            <div class="podium-score">0 marks</div>
-            <div class="podium-block"><span>1</span></div>
-          </div>
-
-          <div class="podium-place third-place" id="podiumThird">
-            <div class="podium-person" aria-hidden="true">🥉</div>
-            <div class="podium-name">Awaiting competitor</div>
-            <div class="podium-score">0 marks</div>
-            <div class="podium-block"><span>3</span></div>
-          </div>
-        </div>
-
+        <aside class="side-leaderboard side-right">
+          <h3>🏅 TOP RANKINGS</h3>
+          <div id="rightRanking" class="side-ranking"></div>
+        </aside>
+        <div class="bottom-rankings" id="bottomRankings" aria-label="Additional rankings"></div>
       </section>
 
       <div class="leaderboard-summary">
