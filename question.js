@@ -237,15 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Reveal the correct answer underneath the feedback.
-    if (answerElement) {
-      answerElement.style.display = "block";
-      answerElement.textContent =
-        "Correct answer: " + currentQuestion.answer;
-      answerElement.style.color = "";
-      answerElement.style.fontWeight = "normal";
-    }
-
+  // Reveal the correct answer in green.
+if (answerElement) {
+  answerElement.style.display = "block";
+  answerElement.textContent =
+    "Correct answer: " + currentQuestion.answer;
+  answerElement.style.color = "green";
+  answerElement.style.fontWeight = "bold";
+}
     setTimeout(returnToArchdeaconry, 2500);
   }
 
