@@ -225,13 +225,17 @@ document.addEventListener("DOMContentLoaded", () => {
         "Correct answer: " + currentQuestion.answer;
     }
 
-    if (timedOut) {
-      showMessage("Time is up! No marks awarded.");
-    } else if (isCorrect) {
-      showMessage("Correct answer! 5 marks awarded.");
-    } else {
-      showMessage("Wrong answer. 0 marks awarded.");
-    }
+if (timedOut) {
+  showMessage(
+    "Time is up! The correct answer is: " + currentQuestion.answer
+  );
+} else if (isCorrect) {
+  showMessage("Correct answer! 5 marks awarded.");
+} else {
+  showMessage(
+    "Wrong answer! The correct answer is: " + currentQuestion.answer
+  );
+}
 
     setTimeout(returnToArchdeaconry, 2500);
   }
