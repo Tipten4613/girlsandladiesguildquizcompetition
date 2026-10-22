@@ -163,11 +163,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveScore(isCorrect) {
     const scores = getJSON("quizScores", {});
 
-    const contestant =
-      localStorage.getItem("contestantName") ||
-      localStorage.getItem("participantName") ||
-      localStorage.getItem("teamName") ||
-      "Contestant";
+ const contestant =
+  archdeaconry ||
+  localStorage.getItem("selectedArchdeaconry") ||
+  localStorage.getItem("contestantName") ||
+  localStorage.getItem("participantName") ||
+  localStorage.getItem("teamName") ||
+  "Contestant";
 
     if (!scores[contestant] ||
         typeof scores[contestant] !== "object") {
