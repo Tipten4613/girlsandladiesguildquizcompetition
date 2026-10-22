@@ -20,73 +20,145 @@ document.addEventListener("DOMContentLoaded", () => {
     overall: "Overall"
   };
 
+  const categoryAliases = {
+    bible: ["bible"],
+    anglicanism: ["anglicanism"],
+    current_affairs: ["current affairs", "current_affairs"]
+  };
+
   const podiumIds = {
     1: "podiumFirst",
     2: "podiumSecond",
     3: "podiumThird"
   };
 
-  function getScores() {
-    try {
-      const saved = localStorage.getItem("scores");
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("Unable to read scores:", error);
-      return [];
-    }
-  }
-
-  function normalizeCategory(value) {
+  function normalize(value) {
     return String(value || "")
       .toLowerCase()
       .replace(/[_-]/g, " ")
       .trim();
   }
 
-  function createCell(value) {
-    const cell = document.createElement("td");
-    cell.textContent = value;
-    return cell;
+  function getScoreData() {
+    try {
+      const savedTotals = JSON.parse(
+        localStorage.getItem("quizScores") || "{}"
+      );
+
+      if (
+        savedTotals &&
+        typeof savedTotals === "object" &&
+        !Array.isArray(savedTotals)
+      ) {
+        return { type: "totals", data: savedTotals };
+      }
+    } catch (error) {
+      console.error("Unable to read quizScores:", error);
+    }
+
+    try {
+      const savedEntries = JSON.parse(
+        localStorage.getItem("scores") || "[]"
+      );
+
+      if (Array.isArray(savedEntries)) {
+        return { type: "entries", data: savedEntries };
+      }
+    } catch (error) {
+      console.error("Unable to read scores:", error);
+    }
+
+    return { type: "totals", data: {} };
+  }
+
+  function findArchdeaconry(contestant) {
+    return archdeaconries.find(
+      name => normalize(name) === normalize(contestant)
+    ) || null;
   }
 
   function getResults(category) {
-    const allScores = getScores();
+    const scoreData = getScoreData();
 
-    const results = archdeaconries.map(name => {
-      const entries = allScores.filter(score => {
-        if (score.archdeaconry !== name) return false;
+    const results = archdeaconries.map(name => ({
+      name,
+      participated: false,
+      correct: "—",
+      totalMarks: 0
+    }));
 
-        return category === "overall" ||
-          normalizeCategory(score.category) ===
-          normalizeCategory(categoryNames[category]);
+    if (scoreData.type === "totals") {
+      for (const [contestant, totals] of Object.entries(scoreData.data)) {
+        const result = results.find(
+          item => normalize(item.name) === normalize(contestant)
+        );
+
+        if (!result || !totals || typeof totals !== "object") continue;
+
+        const bible = Number(totals.bible) || 0;
+        const anglicanism = Number(totals.anglicanism) || 0;
+        const currentAffairs = Number(totals.current_affairs) || 0;
+
+        const hasCategoryData =
+          ["bible", "anglicanism", "current_affairs"].some(
+            key => Object.prototype.hasOwnProperty.call(totals, key)
+          );
+
+        result.participated = hasCategoryData;
+
+        if (category === "overall") {
+          result.totalMarks =
+            Number(totals.overall) ||
+            bible + anglicanism + currentAffairs;
+        } else {
+          const aliases = categoryAliases[category] || [category];
+
+          result.totalMarks = aliases.reduce(
+            (sum, key) => sum + (Number(totals[key]) || 0),
+            0
+          );
+        }
+      }
+    } else {
+      const entries = scoreData.data;
+
+      results.forEach(result => {
+        const matching = entries.filter(score => {
+          if (!score || normalize(score.archdeaconry) !== normalize(result.name)) {
+            return false;
+          }
+
+          return category === "overall" ||
+            (categoryAliases[category] || [category]).includes(
+              normalize(score.category)
+            );
+        });
+
+        if (matching.length > 0) {
+          result.participated = true;
+          result.totalMarks = matching.reduce(
+            (sum, score) => sum + (Number(score.marks) || 0),
+            0
+          );
+
+          result.correct = matching.filter(score =>
+            score.correct === true || score.correct === "true"
+          ).length;
+        }
       });
+    }
 
-      const participated = entries.length > 0;
-
-      const correct = entries.filter(score =>
-        score.correct === true || score.correct === "true"
-      ).length;
-
-      const totalMarks = entries.reduce(
-        (sum, score) => sum + (Number(score.marks) || 0),
-        0
-      );
-
-      return { name, participated, correct, totalMarks };
-    });
-
-    results.sort((a, b) =>
+    return results.sort((a, b) =>
       Number(b.participated) - Number(a.participated) ||
       b.totalMarks - a.totalMarks ||
       a.name.localeCompare(b.name)
     );
-
-    return results;
   }
 
-  function setText(element, value) {
-    element.textContent = value;
+  function createCell(value) {
+    const cell = document.createElement("td");
+    cell.textContent = String(value);
+    return cell;
   }
 
   function updatePodium(place, result) {
@@ -96,11 +168,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = container.querySelector(".podium-name");
     const score = container.querySelector(".podium-score");
 
-    setText(name, result ? result.name : "Awaiting competitor");
-    setText(
-      score,
-      result ? `${result.totalMarks} marks` : "0 marks"
-    );
+    if (name) name.textContent = result ? result.name : "Awaiting competitor";
+    if (score) score.textContent = result ? `${result.totalMarks} marks` : "0 marks";
 
     container.classList.toggle("no-competitor", !result);
   }
@@ -149,19 +218,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const right = document.getElementById("rightRanking");
     const bottom = document.getElementById("bottomRankings");
 
-    left.replaceChildren();
-    right.replaceChildren();
-    bottom.replaceChildren();
+    if (left) left.replaceChildren();
+    if (right) right.replaceChildren();
+    if (bottom) bottom.replaceChildren();
 
     top.slice(0, 5).forEach((result, index) => {
-      left.appendChild(createRankingItem(result, index + 1));
+      if (left) left.appendChild(createRankingItem(result, index + 1));
     });
 
     top.slice(5, 10).forEach((result, index) => {
-      right.appendChild(createRankingItem(result, index + 6));
+      if (right) right.appendChild(createRankingItem(result, index + 6));
     });
 
     top.slice(0, 5).forEach((result, index) => {
+      if (!bottom) return;
+
       const card = document.createElement("div");
       card.className = `bottom-rank-card rank-card-${index + 1}`;
 
@@ -180,17 +251,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (top.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "empty-leaderboard";
-      empty.textContent = "No competitors have scores yet.";
-      left.appendChild(empty);
-      right.appendChild(empty.cloneNode(true));
+      [left, right].forEach(container => {
+        if (!container) return;
+
+        const empty = document.createElement("p");
+        empty.className = "empty-leaderboard";
+        empty.textContent = "No competitors have scores yet.";
+        container.appendChild(empty);
+      });
     }
   }
 
   function displayScoreboard(category) {
+    if (!title || !tableBody || !table) {
+      console.error("Scoreboard HTML elements are missing.");
+      return;
+    }
+
     const categoryName = categoryNames[category] || "Bible";
-    setText(title, `${categoryName} Scoreboard`);
+    title.textContent = `${categoryName} Scoreboard`;
 
     document.body.classList.toggle("overall-mode", category === "overall");
     table.classList.toggle("overall-table", category === "overall");
@@ -201,8 +280,11 @@ document.addEventListener("DOMContentLoaded", () => {
     results.forEach((result, index) => {
       const row = document.createElement("tr");
 
-      if (!result.participated) row.classList.add("absent-row");
-      else if (category === "overall") row.classList.add("overall-participant");
+      if (!result.participated) {
+        row.classList.add("absent-row");
+      } else if (category === "overall") {
+        row.classList.add("overall-participant");
+      }
 
       row.appendChild(createCell(index + 1));
       row.appendChild(createCell(result.name));
@@ -218,10 +300,10 @@ document.addEventListener("DOMContentLoaded", () => {
       result => result.participated
     ).length;
 
-    setText(
-      message,
-      `${participantCount} of ${archdeaconries.length} archdeaconries participated in ${categoryName}.`
-    );
+    if (message) {
+      message.textContent =
+        `${participantCount} of ${archdeaconries.length} archdeaconries participated in ${categoryName}.`;
+    }
   }
 
   tabs.forEach(tab => {
@@ -232,11 +314,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  displayScoreboard("bible");
+  const activeTab = document.querySelector(".category-tab.active");
+  displayScoreboard(activeTab?.dataset.category || "bible");
 
   window.addEventListener("pageshow", () => {
-    const activeTab = document.querySelector(".category-tab.active");
-    displayScoreboard(activeTab?.dataset.category || "bible");
+    const selectedTab = document.querySelector(".category-tab.active");
+    displayScoreboard(selectedTab?.dataset.category || "bible");
+  });
+
+  window.addEventListener("storage", event => {
+    if (event.key === "quizScores" || event.key === "scores") {
+      const selectedTab = document.querySelector(".category-tab.active");
+      displayScoreboard(selectedTab?.dataset.category || "bible");
+    }
   });
 
   resetButton?.addEventListener("click", () => {
@@ -247,15 +337,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirmed) return;
 
     try {
+      localStorage.removeItem("quizScores");
       localStorage.removeItem("scores");
       localStorage.removeItem("usedQuestions");
       localStorage.removeItem("usedQuestionKeys");
 
-      const activeTab = document.querySelector(".category-tab.active");
-      displayScoreboard(activeTab?.dataset.category || "bible");
+      const selectedTab = document.querySelector(".category-tab.active");
+      displayScoreboard(selectedTab?.dataset.category || "bible");
 
       window.alert(
-        "Competition reset. Scores and used-question records were cleared. Imported questions were kept."
+        "Competition reset. Saved scores and used-question records were cleared. Imported questions were kept."
       );
     } catch (error) {
       console.error("Unable to reset competition:", error);
