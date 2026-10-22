@@ -225,16 +225,27 @@ document.addEventListener("DOMContentLoaded", () => {
         "Correct answer: " + currentQuestion.answer;
     }
 
+
 if (timedOut) {
-  showMessage(
-    "Time is up! The correct answer is: " + currentQuestion.answer
-  );
+  showMessage("Time is up!");
 } else if (isCorrect) {
   showMessage("Correct answer! 5 marks awarded.");
 } else {
-  showMessage(
-    "Wrong answer! The correct answer is: " + currentQuestion.answer
-  );
+  showMessage("Wrong answer!");
+}
+
+if (answerElement) {
+  answerElement.style.display = "block";
+  answerElement.textContent =
+    "Correct answer: " + currentQuestion.answer;
+
+  if (!isCorrect && !timedOut) {
+    answerElement.style.color = "red";
+    answerElement.style.fontWeight = "bold";
+  } else {
+    answerElement.style.color = "";
+    answerElement.style.fontWeight = "";
+  }
 }
 
     setTimeout(returnToArchdeaconry, 2500);
