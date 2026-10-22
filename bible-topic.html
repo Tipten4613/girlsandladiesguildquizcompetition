@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Bible Topic</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    .topic-card {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 16px 0;
+      padding: 24px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .topic-card:hover {
+      background: #f0f5ff;
+    }
+    .topic-card span {
+      display: block;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Choose a Bible Topic</h1>
+  <p id="topicMessage">Select the topic for this round.</p>
+
+  <button class="topic-card" type="button"
+    data-topic="life_of_timothy"
+    data-topic-name="The Life of Timothy">
+    The Life of Timothy
+    <span>Questions 1–25</span>
+  </button>
+
+  <button class="topic-card" type="button"
+    data-topic="life_of_esther"
+    data-topic-name="The Life of Esther">
+    The Life of Esther
+    <span>Questions 1–25</span>
+  </button>
+
+  <script src="bible-topic.js"></script>
+</body>
+</html>
