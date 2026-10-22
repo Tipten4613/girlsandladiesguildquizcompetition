@@ -1,15 +1,22 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const importForm = document.getElementById("importForm");
-  const csvFileInput = document.getElementById("csvFile");
-  const statusMessage = document.getElementById("statusMessage");
 
-  if (!importForm || !csvFileInput) {
-    console.error("Question import form or CSV input was not found.");
+document.addEventListener("DOMContentLoaded", () => {
+  const csvFileInput = document.getElementById("csvFile");
+  const importButton = document.getElementById("importButton");
+  const statusMessage = document.getElementById("message");
+
+  if (!importButton || !csvFileInput || !statusMessage) {
+    console.error("Import page elements were not found.");
     return;
+  }
+
+  function showStatus(message, isError = false) {
+    statusMessage.textContent = message;
+    statusMessage.style.color = isError ? "red" : "green";
   }
 
   function normalizeHeader(header) {
     return String(header || "")
+      .replace(/^\uFEFF/, "")
       .trim()
       .toLowerCase()
       .replace(/[\s_-]+/g, "");
@@ -58,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         row.push(cell.trim());
 
-        if (row.some((value) => value !== "")) {
+        if (row.some(value => value !== "")) {
           rows.push(row);
         }
 
@@ -71,25 +78,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     row.push(cell.trim());
 
-    if (row.some((value) => value !== "")) {
+    if (row.some(value => value !== "")) {
       rows.push(row);
     }
 
     return rows;
   }
 
-  function showStatus(message, isError = false) {
-    if (statusMessage) {
-      statusMessage.textContent = message;
-      statusMessage.style.color = isError ? "red" : "green";
-    } else {
-      alert(message);
-    }
-  }
-
-  importForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
+  importButton.addEventListener("click", () => {
     const file = csvFileInput.files[0];
 
     if (!file) {
@@ -104,32 +100,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const rows = parseCSV(String(reader.result || ""));
 
         if (rows.length < 2) {
-          showStatus("The CSV file has no question rows.", true);
-          return;
+          throw new Error("The CSV file contains no question rows.");
         }
 
         const headers = rows[0].map(normalizeHeader);
-        const column = (name) => headers.indexOf(normalizeHeader(name));
+        const column = name =>
+          headers.indexOf(normalizeHeader(name));
 
-        const categoryIndex = column("category");
-        const numberIndex = column("questionNumber");
-        const questionIndex = column("question");
-        const optionAIndex = column("optionA");
-        const optionBIndex = column("optionB");
-        const optionCIndex = column("optionC");
-        const optionDIndex = column("optionD");
-        const answerIndex = column("answer");
-        const typeIndex = column("type");
+        const indexes = {
+          type: column("type"),
+          category: column("category"),
+          number: column("questionNumber"),
+          question: column("question"),
+          A: column("optionA"),
+          B: column("optionB"),
+          C: column("optionC"),
+          D: column("optionD"),
+          answer: column("answer")
+        };
 
         const required = [
-          ["category", categoryIndex],
-          ["questionNumber", numberIndex],
-          ["question", questionIndex],
-          ["optionA", optionAIndex],
-          ["optionB", optionBIndex],
-          ["optionC", optionCIndex],
-          ["optionD", optionDIndex],
-          ["answer", answerIndex],
+          ["category", indexes.category],
+          ["questionNumber", indexes.number],
+          ["question", indexes.question],
+          ["optionA", indexes.A],
+          ["optionB", indexes.B],
+          ["optionC", indexes.C],
+          ["optionD", indexes.D],
+          ["answer", indexes.answer]
         ];
 
         const missing = required
@@ -137,17 +135,15 @@ document.addEventListener("DOMContentLoaded", () => {
           .map(([name]) => name);
 
         if (missing.length) {
-          showStatus(
-            "Missing CSV columns: " + missing.join(", "),
-            true
+          throw new Error(
+            "Missing CSV columns: " + missing.join(", ")
           );
-          return;
         }
 
         const validCategories = [
           "bible",
           "anglicanism",
-          "current_affairs",
+          "current_affairs"
         ];
 
         const questions = [];
@@ -155,23 +151,24 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 1; i < rows.length; i++) {
           const cells = rows[i];
 
-          const get = (index) =>
+          const get = index =>
             index >= 0 ? String(cells[index] || "").trim() : "";
 
-          const category = get(categoryIndex)
+          const category = get(indexes.category)
             .toLowerCase()
             .replace(/[\s-]+/g, "_");
 
-          const questionNumber = get(numberIndex);
-          const question = get(questionIndex);
+          const questionNumber = get(indexes.number);
+          const question = get(indexes.question);
+          const answer = get(indexes.answer);
+          const type = normalizeType(get(indexes.type));
+
           const options = [
-            get(optionAIndex),
-            get(optionBIndex),
-            get(optionCIndex),
-            get(optionDIndex),
+            get(indexes.A),
+            get(indexes.B),
+            get(indexes.C),
+            get(indexes.D)
           ];
-          const answer = get(answerIndex);
-          const type = normalizeType(get(typeIndex));
 
           if (!validCategories.includes(category)) {
             throw new Error(
@@ -186,14 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           if (type === "multiple_choice") {
-            if (options.some((option) => !option)) {
+            if (options.some(option => !option)) {
               throw new Error(
-                `Row ${i + 1}: Multiple-choice questions need all four options.`
+                `Row ${i + 1}: All four options are required.`
               );
             }
 
             if (!options.some(
-              (option) => option.toLowerCase() === answer.toLowerCase()
+              option =>
+                option.toLowerCase() === answer.toLowerCase()
             )) {
               throw new Error(
                 `Row ${i + 1}: The answer must match one of the four options.`
@@ -207,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
             questionNumber,
             question,
             options: type === "fill_blank" ? [] : options,
-            answer,
+            answer
           });
         }
 
@@ -219,8 +217,12 @@ document.addEventListener("DOMContentLoaded", () => {
         showStatus(
           `Successfully imported ${questions.length} questions.`
         );
+
       } catch (error) {
-        showStatus(error.message || "Could not import the CSV file.", true);
+        showStatus(
+          error.message || "Could not import the CSV file.",
+          true
+        );
       }
     };
 
@@ -228,6 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
       showStatus("Could not read the selected file.", true);
     };
 
-    reader.readAsText(file);
+    reader.readAsText(file, "UTF-8");
   });
 });
