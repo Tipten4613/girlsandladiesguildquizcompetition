@@ -1,340 +1,293 @@
-
 document.addEventListener("DOMContentLoaded", () => {
-  const questionCategory = document.getElementById("questionCategory");
-  const questionArchdeaconry = document.getElementById("questionArchdeaconry");
-  const questionNumber = document.getElementById("questionNumber");
-  const questionText = document.getElementById("questionText");
-  const answerOptions = document.getElementById("answerOptions");
-  const submitAnswerBtn = document.getElementById("submitAnswerBtn");
-  const answerMessage = document.getElementById("answerMessage");
+  const questionElement = document.getElementById("question");
+  const optionsElement = document.getElementById("options");
   const timerElement = document.getElementById("timer");
-  const readQuestionBtn = document.getElementById("readQuestionBtn");
+  const correctButton = document.getElementById("correctBtn");
+  const wrongButton = document.getElementById("wrongBtn");
+  const answerElement = document.getElementById("correctAnswer");
+  const messageElement = document.getElementById("message");
+
+  const params = new URLSearchParams(window.location.search);
 
   const category = (
-    localStorage.getItem("selectedCategory") || ""
-  ).toLowerCase().replace(/\s+/g, "_");
+    params.get("category") ||
+    localStorage.getItem("selectedCategory") ||
+    "bible"
+  ).toLowerCase();
 
-  const categoryName =
-    localStorage.getItem("selectedCategoryName") || "Not selected";
+  const questionNumber =
+    params.get("questionNumber") ||
+    params.get("number") ||
+    localStorage.getItem("selectedQuestionNumber") ||
+    "";
 
   const archdeaconry =
-    localStorage.getItem("selectedArchdeaconry") || "Not selected";
+    params.get("archdeaconry") ||
+    localStorage.getItem("selectedArchdeaconry") ||
+    "";
 
-  const selectedNumber =
-    Number(localStorage.getItem("selectedQuestionNumber"));
+  let timer = 30;
+  let timerInterval = null;
+  let questionFinished = false;
 
-  questionCategory.textContent = categoryName;
-  questionArchdeaconry.textContent = archdeaconry;
-  questionNumber.textContent = selectedNumber || "Not selected";
-
-  // Sample questions are used only when no questions have been imported.
-  const sampleQuestions = {
-    bible: {
-      1: {
-        question: "Who built the ark?",
-        options: ["Moses", "Noah", "Abraham", "David"],
-        answer: "Noah"
-      },
-      2: {
-        question: "How many books are in the New Testament?",
-        options: ["27", "39", "66", "12"],
-        answer: "27"
-      }
-    },
-    anglicanism: {
-      1: {
-        question: "What is the main book used in Christian worship?",
-        options: ["The Bible", "A dictionary", "A newspaper", "A novel"],
-        answer: "The Bible"
-      },
-      2: {
-        question: "What colour is commonly associated with Christmas in Anglican worship?",
-        options: ["White", "Black", "Grey", "Brown"],
-        answer: "White"
-      }
-    },
-    current_affairs: {
-      1: {
-        question: "What does UN stand for?",
-        options: [
-          "United Nations",
-          "Universal Network",
-          "United Neighbours",
-          "Union Nation"
-        ],
-        answer: "United Nations"
-      },
-      2: {
-        question: "What is the capital of Nigeria?",
-        options: ["Lagos", "Ibadan", "Abuja", "Kano"],
-        answer: "Abuja"
-      }
+  function getJSON(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value ?? fallback;
+    } catch {
+      return fallback;
     }
-  };
-
-  // Load imported questions safely.
-  let importedQuestions = [];
-
-  try {
-    const savedQuestions = JSON.parse(
-      localStorage.getItem("quizQuestions") || "[]"
-    );
-
-    if (Array.isArray(savedQuestions)) {
-      importedQuestions = savedQuestions;
-    }
-  } catch (error) {
-    importedQuestions = [];
   }
 
-  const importedQuestion = importedQuestions.find(item =>
-    item.category === category &&
-    Number(item.questionNumber) === selectedNumber
-  );
+  function normalize(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+  }
 
-  // Use imported questions if any exist; otherwise use sample questions.
-  const selectedQuestion = importedQuestion
-    ? {
-        question: importedQuestion.question,
-        options: importedQuestion.options,
-        answer: importedQuestion.answer
-      }
-    : importedQuestions.length === 0
-      ? sampleQuestions[category]?.[selectedNumber]
-      : null;
-
-  if (
-    !selectedQuestion ||
-    !selectedQuestion.question ||
-    !Array.isArray(selectedQuestion.options) ||
-    selectedQuestion.options.length !== 4 ||
-    !selectedQuestion.options.includes(selectedQuestion.answer)
-  ) {
-    questionText.textContent = "This question is not available.";
-    answerMessage.textContent =
-      "Check your imported questions and selected question number.";
-    submitAnswerBtn.disabled = true;
-
-    if (readQuestionBtn) {
-      readQuestionBtn.disabled = true;
+  function showMessage(text) {
+    if (messageElement) {
+      messageElement.textContent = text;
     }
+  }
+
+  function stopTimer() {
+    if (timerInterval !== null) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function updateTimer() {
+    if (timerElement) {
+      timerElement.textContent = `Time: ${timer}s`;
+    }
+  }
+
+  function getAllQuestions() {
+    const imported = getJSON("quizQuestions", []);
+    return Array.isArray(imported) ? imported : [];
+  }
+
+  function findQuestion() {
+    const questions = getAllQuestions();
+
+    return questions.find((item) => {
+      const sameCategory =
+        normalize(item.category) === normalize(category);
+
+      const sameNumber =
+        String(item.questionNumber) === String(questionNumber);
+
+      const sameArchdeaconry =
+        !item.archdeaconry ||
+        !archdeaconry ||
+        normalize(item.archdeaconry) === normalize(archdeaconry);
+
+      return sameCategory && sameNumber && sameArchdeaconry;
+    });
+  }
+
+  function getUsedQuestions() {
+    return getJSON("usedQuestions", []);
+  }
+
+  function markQuestionUsed() {
+    const used = getUsedQuestions();
+    const key = JSON.stringify([
+      normalize(category),
+      String(questionNumber),
+    ]);
+
+    if (!used.includes(key)) {
+      used.push(key);
+      localStorage.setItem("usedQuestions", JSON.stringify(used));
+    }
+  }
+
+  function getScores() {
+    return getJSON("quizScores", {});
+  }
+
+  function saveScore(isCorrect) {
+    const scores = getScores();
+
+    const contestant =
+      localStorage.getItem("contestantName") ||
+      localStorage.getItem("participantName") ||
+      localStorage.getItem("teamName") ||
+      "Contestant";
+
+    if (!scores[contestant]) {
+      scores[contestant] = {
+        bible: 0,
+        anglicanism: 0,
+        current_affairs: 0,
+        overall: 0,
+      };
+    }
+
+    if (typeof scores[contestant] === "number") {
+      scores[contestant] = {
+        bible: 0,
+        anglicanism: 0,
+        current_affairs: 0,
+        overall: scores[contestant],
+      };
+    }
+
+    const points = isCorrect ? 5 : 0;
+    const normalizedCategory = normalize(category);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        scores[contestant],
+        normalizedCategory
+      )
+    ) {
+      scores[contestant][normalizedCategory] += points;
+    } else {
+      scores[contestant][normalizedCategory] = points;
+    }
+
+    scores[contestant].overall =
+      (Number(scores[contestant].bible) || 0) +
+      (Number(scores[contestant].anglicanism) || 0) +
+      (Number(scores[contestant].current_affairs) || 0);
+
+    localStorage.setItem("quizScores", JSON.stringify(scores));
+  }
+
+  function returnToArchdeaconry() {
+    const destination = new URL(
+      "archdeaconry.html",
+      window.location.href
+    );
+
+    destination.searchParams.set("category", category);
+
+    if (archdeaconry) {
+      destination.searchParams.set("archdeaconry", archdeaconry);
+    }
+
+    window.location.href = destination.href;
+  }
+
+  function finishQuestion(isCorrect) {
+    if (questionFinished) return;
+
+    questionFinished = true;
+    stopTimer();
+
+    if (correctButton) correctButton.disabled = true;
+    if (wrongButton) wrongButton.disabled = true;
+
+    saveScore(isCorrect);
+    markQuestionUsed();
+
+    if (answerElement) {
+      answerElement.style.display = "block";
+      answerElement.textContent =
+        `Correct answer: ${currentQuestion.answer}`;
+    }
+
+    showMessage(
+      isCorrect
+        ? "Marked CORRECT. 5 marks awarded."
+        : "Marked WRONG. 0 marks awarded."
+    );
+
+    setTimeout(returnToArchdeaconry, 2500);
+  }
+
+  const currentQuestion = findQuestion();
+
+  if (!currentQuestion) {
+    if (questionElement) {
+      questionElement.textContent = "Question not found.";
+    }
+
+    showMessage(
+      "Check that the question was imported and the question number is correct."
+    );
+
+    if (optionsElement) optionsElement.replaceChildren();
+    if (timerElement) timerElement.textContent = "";
+    if (correctButton) correctButton.disabled = true;
+    if (wrongButton) wrongButton.disabled = true;
 
     return;
   }
 
-  questionText.textContent = selectedQuestion.question;
+  if (questionElement) {
+    questionElement.textContent = currentQuestion.question;
+  }
 
-  let selectedAnswer = null;
-  let submitted = false;
-  let timerFinished = false;
-  let timeLeft = 30;
+  if (optionsElement) {
+    optionsElement.replaceChildren();
 
-  // SPEECH FEATURE: prefer Nigerian English if the device provides it.
-  function readQuestionAloud() {
-    if (!("speechSynthesis" in window)) {
-      answerMessage.textContent =
-        "Voice reading is not supported by this browser.";
+    const type = normalize(currentQuestion.type);
+
+    if (
+      type === "fill_blank" ||
+      type === "fillinthegap" ||
+      type === "fillintheblank"
+    ) {
+      const note = document.createElement("p");
+      note.textContent = "Question type: Fill in the gap";
+      optionsElement.appendChild(note);
+    } else {
+      const options = Array.isArray(currentQuestion.options)
+        ? currentQuestion.options
+        : [];
+
+      options.forEach((option, index) => {
+        const optionElement = document.createElement("p");
+        optionElement.textContent =
+          `${String.fromCharCode(65 + index)}. ${option}`;
+        optionsElement.appendChild(optionElement);
+      });
+    }
+  }
+
+  if (answerElement) {
+    answerElement.style.display = "none";
+    answerElement.textContent = "";
+  }
+
+  if (correctButton) {
+    correctButton.addEventListener("click", () => {
+      finishQuestion(true);
+    });
+  }
+
+  if (wrongButton) {
+    wrongButton.addEventListener("click", () => {
+      finishQuestion(false);
+    });
+  }
+
+  updateTimer();
+
+  timerInterval = setInterval(() => {
+    if (questionFinished) {
+      stopTimer();
       return;
     }
 
-    // Stop any previous reading before replaying.
-    window.speechSynthesis.cancel();
+    timer--;
 
-    const spokenText =
-  "Question. " + selectedQuestion.question + ". " +
-  selectedQuestion.options.map((option, index) => {
-    const letter = ["A", "B", "C", "D"][index];
-    return `Option ${letter}. ${option}.`;
-  }).join(" ");
-
-const utterance = new SpeechSynthesisUtterance(spokenText);
-
-    const voices = window.speechSynthesis.getVoices();
-
-    const nigerianVoice = voices.find(voice =>
-      /^en[-_]NG$/i.test(voice.lang)
-    );
-
-    const englishFallback = voices.find(voice =>
-      /^en[-_]GB$/i.test(voice.lang)
-    ) || voices.find(voice =>
-      /^en[-_]US$/i.test(voice.lang)
-    ) || voices.find(voice =>
-      /^en/i.test(voice.lang)
-    );
-
-    const preferredVoice = nigerianVoice || englishFallback;
-
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-      utterance.lang = preferredVoice.lang;
-    } else {
-      // Ask the browser for Nigerian English if no voice is listed.
-      utterance.lang = "en-NG";
+    if (timer <= 0) {
+      timer = 0;
+      updateTimer();
+      stopTimer();
+      showMessage(
+        "Time is up. Judge: please mark the answer CORRECT or WRONG."
+      );
+      return;
     }
 
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-
-    window.speechSynthesis.speak(utterance);
-  }
-
-  if (readQuestionBtn) {
-    readQuestionBtn.addEventListener("click", () => {
-      if (!submitted) {
-        readQuestionAloud();
-      }
-    });
-  }
-
-  // Display answer buttons.
-  answerOptions.innerHTML = "";
-
-  selectedQuestion.options.forEach(option => {
-    const button = document.createElement("button");
-
-    button.type = "button";
-    button.className = "answer-option";
-    button.textContent = option;
-
-    button.addEventListener("click", () => {
-      if (submitted) return;
-
-      answerOptions.querySelectorAll(".answer-option").forEach(btn => {
-        btn.classList.remove("selected");
-      });
-
-      button.classList.add("selected");
-      selectedAnswer = option;
-    });
-
-    answerOptions.appendChild(button);
-  });
-
-  // Start the 30-second timer.
-  timerElement.textContent = timeLeft;
-
-  const timer = setInterval(() => {
-    if (submitted) return;
-
-    timeLeft--;
-    timerElement.textContent = timeLeft;
-
-    if (timeLeft <= 10) {
-      timerElement.parentElement.classList.add("timer-warning");
-    }
-
-    if (timeLeft <= 5) {
-      timerElement.parentElement.classList.add("timer-danger");
-    }
-
-    if (timeLeft <= 0) {
-      timerFinished = true;
-      submitAnswer();
-    }
+    updateTimer();
   }, 1000);
-
-  // Try reading the question automatically.
-  // Some browsers require the participant to press the replay button.
-  if ("speechSynthesis" in window) {
-    window.setTimeout(() => {
-      if (!submitted) {
-        readQuestionAloud();
-      }
-    }, 500);
-  }
-
-  submitAnswerBtn.addEventListener("click", () => {
-    submitAnswer();
-  });
-
-  function submitAnswer() {
-    if (submitted) return;
-
-    submitted = true;
-    submitAnswerBtn.disabled = true;
-    clearInterval(timer);
-
-    // Stop the spoken question when the answer is submitted.
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    if (readQuestionBtn) {
-      readQuestionBtn.disabled = true;
-    }
-
-    const isCorrect = selectedAnswer === selectedQuestion.answer;
-    const marks = isCorrect ? 5 : 0;
-
-    // Track each question across all archdeaconries in the same category.
-    let usedQuestionKeys = [];
-
-    try {
-      const savedKeys = JSON.parse(
-        localStorage.getItem("usedQuestionKeys") || "[]"
-      );
-
-      if (Array.isArray(savedKeys)) {
-        usedQuestionKeys = savedKeys;
-      }
-    } catch (error) {
-      usedQuestionKeys = [];
-    }
-
-    const questionKey = JSON.stringify([
-      category.trim().toLowerCase().replace(/\s+/g, "_"),
-      selectedNumber
-    ]);
-
-    if (!usedQuestionKeys.includes(questionKey)) {
-      usedQuestionKeys.push(questionKey);
-
-      localStorage.setItem(
-        "usedQuestionKeys",
-        JSON.stringify(usedQuestionKeys)
-      );
-    }
-
-    // Save score using the existing scoreboard data format.
-    let scores = [];
-
-    try {
-      const savedScores = JSON.parse(
-        localStorage.getItem("scores") || "[]"
-      );
-
-      if (Array.isArray(savedScores)) {
-        scores = savedScores;
-      }
-    } catch (error) {
-      scores = [];
-    }
-
-    scores.push({
-      category: categoryName,
-      archdeaconry: archdeaconry,
-      questionNumber: selectedNumber,
-      marks: marks,
-      correct: isCorrect
-    });
-
-    localStorage.setItem("scores", JSON.stringify(scores));
-
-    // Display feedback.
-    if (isCorrect) {
-      answerMessage.textContent = "Correct answer!";
-    } else if (timerFinished) {
-      answerMessage.textContent =
-        `Time is up! The correct answer is ${selectedQuestion.answer}.`;
-    } else {
-      answerMessage.textContent =
-        `Incorrect. The correct answer is ${selectedQuestion.answer}.`;
-    }
-
-    // Return to the existing archdeaconry page.
-    setTimeout(() => {
-      window.location.href = "archdeaconry.html";
-    }, 2500);
-  }
 });
