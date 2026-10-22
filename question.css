@@ -514,3 +514,12 @@ body {
     width: 100%;
   }
 }
+
+#answerMessage {
+  order: -1;
+}
+
+#answerMessage.wrong-answer {
+  color: red;
+  font-weight: bold;
+}
