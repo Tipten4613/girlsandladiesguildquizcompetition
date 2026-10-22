@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function showMessage(message) {
     if (messageElement) {
       messageElement.textContent = message;
+      messageElement.style.display = "block";
     }
   }
 
@@ -163,13 +164,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveScore(isCorrect) {
     const scores = getJSON("quizScores", {});
 
- const contestant =
-  archdeaconry ||
-  localStorage.getItem("selectedArchdeaconry") ||
-  localStorage.getItem("contestantName") ||
-  localStorage.getItem("participantName") ||
-  localStorage.getItem("teamName") ||
-  "Contestant";
+    const contestant =
+      archdeaconry ||
+      localStorage.getItem("selectedArchdeaconry") ||
+      localStorage.getItem("contestantName") ||
+      localStorage.getItem("participantName") ||
+      localStorage.getItem("teamName") ||
+      "Contestant";
 
     if (!scores[contestant] ||
         typeof scores[contestant] !== "object") {
@@ -219,39 +220,31 @@ document.addEventListener("DOMContentLoaded", () => {
     saveScore(isCorrect);
     markQuestionUsed();
 
+    // Display feedback before revealing the correct answer.
+    if (messageElement) {
+      messageElement.style.display = "block";
+      messageElement.style.fontWeight = "bold";
+
+      if (timedOut) {
+        messageElement.textContent = "Time is up!";
+        messageElement.style.color = "red";
+      } else if (isCorrect) {
+        messageElement.textContent = "Correct answer! 5 marks awarded.";
+        messageElement.style.color = "green";
+      } else {
+        messageElement.textContent = "Wrong answer!";
+        messageElement.style.color = "red";
+      }
+    }
+
+    // Reveal the correct answer underneath the feedback.
     if (answerElement) {
       answerElement.style.display = "block";
       answerElement.textContent =
         "Correct answer: " + currentQuestion.answer;
+      answerElement.style.color = "";
+      answerElement.style.fontWeight = "normal";
     }
-
-
-if (timedOut) {
-  showMessage("Time is up!");
-} else if (isCorrect) {
-  showMessage("Correct answer! 5 marks awarded.");
-} else {
-  showMessage("Wrong answer!");
-}
-const messageElement = document.getElementById("answerMessage");
-
-if (messageElement) {
-  messageElement.style.color = "red";
-  messageElement.style.fontWeight = "bold";
-}
-if (answerElement) {
-  answerElement.style.display = "block";
-  answerElement.textContent =
-    "Correct answer: " + currentQuestion.answer;
-
-  if (!isCorrect && !timedOut) {
-    answerElement.style.color = "red";
-    answerElement.style.fontWeight = "bold";
-  } else {
-    answerElement.style.color = "";
-    answerElement.style.fontWeight = "";
-  }
-}
 
     setTimeout(returnToArchdeaconry, 2500);
   }
@@ -292,9 +285,17 @@ if (answerElement) {
     numberElement.textContent = questionNumber;
   }
 
+  // Hide previous feedback when loading a question.
   if (answerElement) {
     answerElement.style.display = "none";
     answerElement.textContent = "";
+  }
+
+  if (messageElement) {
+    messageElement.style.display = "none";
+    messageElement.textContent = "";
+    messageElement.style.color = "";
+    messageElement.style.fontWeight = "";
   }
 
   if (optionsElement) {
