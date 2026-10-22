@@ -1,73 +1,56 @@
 
 document.addEventListener("DOMContentLoaded", () => {
-  const categoryNameElement =
-    document.getElementById("categoryName");
+  const categoryNameElement = document.getElementById("categoryName");
+  const archdeaconryNameElement = document.getElementById("archdeaconryName");
+  const questionNumberGrid = document.getElementById("questionNumberGrid");
+  const questionNumberMessage = document.getElementById("questionNumberMessage");
 
-  const archdeaconryNameElement =
-    document.getElementById("archdeaconryName");
+  function getJSON(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
 
-  const questionNumberGrid =
-    document.getElementById("questionNumberGrid");
-
-  const questionNumberMessage =
-    document.getElementById("questionNumberMessage");
-
-  const categoryName =
-    localStorage.getItem("selectedCategoryName") || "";
-
-  const archdeaconryName =
-    localStorage.getItem("selectedArchdeaconry") || "";
-
-  const category =
-    (localStorage.getItem("selectedCategory") || "")
+  function normalize(value) {
+    return String(value || "")
+      .trim()
       .toLowerCase()
-      .replace(/\s+/g, "_");
-
-  categoryNameElement.textContent =
-    categoryName || "Not selected";
-
-  archdeaconryNameElement.textContent =
-    archdeaconryName || "Not selected";
-
-// Create a shared key for each category and question number.
-function getQuestionKey(number) {
-  return JSON.stringify([
-    category.trim().toLowerCase().replace(/\s+/g, "_"),
-    number
-  ]);
-}
-  // Load used question keys.
-  let usedQuestionKeys = [];
-
-  try {
-    usedQuestionKeys = JSON.parse(
-      localStorage.getItem("usedQuestionKeys") || "[]"
-    );
-
-    if (!Array.isArray(usedQuestionKeys)) {
-      usedQuestionKeys = [];
-    }
-  } catch (error) {
-    usedQuestionKeys = [];
+      .replace(/[\s-]+/g, "_");
   }
 
-  // Load imported questions.
-  let importedQuestions = [];
+  const category = normalize(localStorage.getItem("selectedCategory"));
+  const categoryName = localStorage.getItem("selectedCategoryName") || "";
+  const archdeaconry = localStorage.getItem("selectedArchdeaconry") || "";
+  const topic = normalize(localStorage.getItem("selectedBibleTopic"));
+  const topicName = localStorage.getItem("selectedBibleTopicName") || "";
 
-  try {
-    importedQuestions = JSON.parse(
-      localStorage.getItem("quizQuestions") || "[]"
-    );
-
-    if (!Array.isArray(importedQuestions)) {
-      importedQuestions = [];
-    }
-  } catch (error) {
-    importedQuestions = [];
+  if (categoryNameElement) {
+    categoryNameElement.textContent = categoryName || "Not selected";
   }
 
-  const categoryQuestions = importedQuestions.filter(
-    item => item.category === category
+  if (archdeaconryNameElement) {
+    archdeaconryNameElement.textContent = archdeaconry || "Not selected";
+  }
+
+  if (!questionNumberGrid) return;
+
+  if (category === "bible" && !["life_of_timothy", "life_of_esther"].includes(topic)) {
+    if (questionNumberMessage) {
+      questionNumberMessage.textContent =
+        "Please choose The Life of Timothy or The Life of Esther first.";
+    }
+    return;
+  }
+
+  const importedQuestions = getJSON("quizQuestions", []);
+  const questions = Array.isArray(importedQuestions) ? importedQuestions : [];
+
+  const categoryQuestions = questions.filter(item =>
+    normalize(item.category) === category &&
+    (category !== "bible" || normalize(item.topic) === topic)
   );
 
   const importedNumbers = [
@@ -78,15 +61,29 @@ function getQuestionKey(number) {
     )
   ].sort((a, b) => a - b);
 
-  // Show imported numbers, or 20 test numbers if nothing is imported.
-  const questionNumbers = importedQuestions.length > 0
+  const questionNumbers = questions.length > 0
     ? importedNumbers
     : Array.from({ length: 20 }, (_, index) => index + 1);
 
-  if (importedQuestions.length > 0 && questionNumbers.length === 0) {
-    questionNumberMessage.textContent =
-      "No questions have been imported for this category yet.";
+  if (questions.length > 0 && questionNumbers.length === 0) {
+    if (questionNumberMessage) {
+      questionNumberMessage.textContent =
+        category === "bible"
+          ? `No questions imported for ${topicName || topic}.`
+          : "No questions have been imported for this category yet.";
+    }
     return;
+  }
+
+  const usedQuestions = getJSON("usedQuestions", []);
+  const used = Array.isArray(usedQuestions) ? usedQuestions : [];
+
+  function getQuestionKey(number) {
+    return JSON.stringify([
+      category,
+      category === "bible" ? topic : "",
+      String(number)
+    ]);
   }
 
   questionNumbers.forEach(number => {
@@ -94,7 +91,7 @@ function getQuestionKey(number) {
     card.type = "button";
     card.className = "question-number-card";
 
-    const isUsed = usedQuestionKeys.includes(getQuestionKey(number));
+    const isUsed = used.includes(getQuestionKey(number));
 
     if (isUsed) {
       card.classList.add("used");
@@ -107,10 +104,12 @@ function getQuestionKey(number) {
     `;
 
     card.addEventListener("click", () => {
-      localStorage.setItem("selectedQuestionNumber", number);
+      localStorage.setItem("selectedQuestionNumber", String(number));
 
-      questionNumberMessage.textContent =
-        `Question ${number} selected. Opening question...`;
+      if (questionNumberMessage) {
+        questionNumberMessage.textContent =
+          `Question ${number} selected. Opening question...`;
+      }
 
       window.location.href = "question.html";
     });
