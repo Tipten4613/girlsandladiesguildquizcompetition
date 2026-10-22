@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const wrongButton = document.getElementById("wrongBtn");
   const answerElement = document.getElementById("correctAnswer");
   const messageElement = document.getElementById("answerMessage");
-
   const categoryElement = document.getElementById("questionCategory");
   const archdeaconryElement = document.getElementById("questionArchdeaconry");
   const numberElement = document.getElementById("questionNumber");
@@ -24,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function normalize(value) {
-    return String(value || "")
+    return String(value ?? "")
       .trim()
       .toLowerCase()
       .replace(/[\s-]+/g, "_");
@@ -83,7 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return questions.find(item => {
       const sameCategory = normalize(item.category) === category;
-      const sameNumber = String(item.questionNumber) === questionNumber;
+      const sameNumber =
+        String(item.questionNumber) === questionNumber;
 
       const sameTopic =
         category !== "bible" || normalize(item.topic) === topic;
@@ -93,7 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
         !archdeaconry ||
         normalize(item.archdeaconry) === normalize(archdeaconry);
 
-      return sameCategory && sameNumber && sameTopic && sameArchdeaconry;
+      return sameCategory && sameNumber &&
+        sameTopic && sameArchdeaconry;
     });
   }
 
@@ -126,7 +127,8 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.getItem("teamName") ||
       "Contestant";
 
-    if (!scores[contestant] || typeof scores[contestant] !== "object") {
+    if (!scores[contestant] ||
+        typeof scores[contestant] !== "object") {
       scores[contestant] = {
         bible: 0,
         anglicanism: 0,
@@ -137,7 +139,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const points = isCorrect ? 5 : 0;
 
-    if (Object.prototype.hasOwnProperty.call(scores[contestant], category)) {
+    if (Object.prototype.hasOwnProperty.call(
+      scores[contestant], category
+    )) {
       scores[contestant][category] =
         (Number(scores[contestant][category]) || 0) + points;
     }
@@ -150,11 +154,48 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("quizScores", JSON.stringify(scores));
   }
 
-  function finishQuestion(isCorrect) {
+  function getOptions() {
+    return Array.isArray(currentQuestion.options)
+      ? currentQuestion.options
+      : [
+          currentQuestion.optionA,
+          currentQuestion.optionB,
+          currentQuestion.optionC,
+          currentQuestion.optionD
+        ].filter(value => value !== undefined && value !== "");
+  }
+
+  function isCorrectAnswer(selectedValue) {
+    const options = getOptions();
+    const answer = String(currentQuestion.answer ?? "").trim();
+
+    if (/^[A-D]$/i.test(answer)) {
+      const index = answer.toUpperCase().charCodeAt(0) - 65;
+      return index >= 0 &&
+        index < options.length &&
+        selectedValue === String(index);
+    }
+
+    return normalize(selectedValue) === normalize(answer) ||
+      (
+        options[Number(selectedValue)] !== undefined &&
+        normalize(options[Number(selectedValue)]) === normalize(answer)
+      );
+  }
+
+  function finishQuestion(isCorrect, timedOut = false) {
     if (questionFinished) return;
 
     questionFinished = true;
     stopTimer();
+
+    if (submitButton) submitButton.disabled = true;
+
+    document.querySelectorAll(
+      'input[name="contestantAnswer"]'
+    ).forEach(input => {
+      input.disabled = true;
+    });
 
     if (correctButton) correctButton.disabled = true;
     if (wrongButton) wrongButton.disabled = true;
@@ -168,25 +209,32 @@ document.addEventListener("DOMContentLoaded", () => {
         "Correct answer: " + currentQuestion.answer;
     }
 
-    showMessage(
-      isCorrect
-        ? "Marked CORRECT — 5 marks awarded."
-        : "Marked WRONG — 0 marks awarded."
-    );
+    if (timedOut) {
+      showMessage("Time is up! No marks awarded.");
+    } else if (isCorrect) {
+      showMessage("Correct answer! 5 marks awarded.");
+    } else {
+      showMessage("Wrong answer. 0 marks awarded.");
+    }
 
     setTimeout(returnToArchdeaconry, 2500);
   }
 
+  let submitButton = null;
+
+  if (correctButton) correctButton.style.display = "none";
+  if (wrongButton) wrongButton.style.display = "none";
+
   if (!currentQuestion) {
-    if (questionElement) questionElement.textContent = "Question not found.";
+    if (questionElement) {
+      questionElement.textContent = "Question not found.";
+    }
 
     showMessage(
       "Please check the imported questions, selected topic and question number."
     );
 
     if (optionsElement) optionsElement.replaceChildren();
-    if (correctButton) correctButton.disabled = true;
-    if (wrongButton) wrongButton.disabled = true;
     if (timerElement) timerElement.textContent = "—";
 
     return;
@@ -202,32 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (archdeaconryElement) {
     archdeaconryElement.textContent =
-      category === "bible" ? (topicName || topic.replace(/_/g, " ")) : (archdeaconry || "—");
+      category === "bible"
+        ? (topicName || topic.replace(/_/g, " "))
+        : (archdeaconry || "—");
   }
 
-  if (numberElement) numberElement.textContent = questionNumber;
-
-  if (optionsElement) {
-    optionsElement.replaceChildren();
-
-    const type = normalize(currentQuestion.type);
-
-    if (type === "fill_blank" || type === "fillinthegap") {
-      const note = document.createElement("p");
-      note.textContent = "Fill in the gap";
-      optionsElement.appendChild(note);
-    } else {
-      const options = Array.isArray(currentQuestion.options)
-        ? currentQuestion.options
-        : [];
-
-      options.forEach((option, index) => {
-        const optionElement = document.createElement("p");
-        optionElement.textContent =
-          String.fromCharCode(65 + index) + ". " + option;
-        optionsElement.appendChild(optionElement);
-      });
-    }
+  if (numberElement) {
+    numberElement.textContent = questionNumber;
   }
 
   if (answerElement) {
@@ -235,14 +264,105 @@ document.addEventListener("DOMContentLoaded", () => {
     answerElement.textContent = "";
   }
 
-  if (correctButton) {
-    correctButton.disabled = false;
-    correctButton.addEventListener("click", () => finishQuestion(true));
-  }
+  if (optionsElement) {
+    optionsElement.replaceChildren();
 
-  if (wrongButton) {
-    wrongButton.disabled = false;
-    wrongButton.addEventListener("click", () => finishQuestion(false));
+    const type = normalize(currentQuestion.type);
+    const isFillBlank =
+      type === "fill_blank" || type === "fillinthegap";
+
+    const form = document.createElement("form");
+    form.id = "contestantAnswerForm";
+
+    if (isFillBlank) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.name = "contestantAnswer";
+      input.id = "contestantAnswer";
+      input.placeholder = "Type your answer here";
+      input.autocomplete = "off";
+      input.required = true;
+      input.style.display = "block";
+      input.style.width = "100%";
+      input.style.padding = "12px";
+      input.style.margin = "12px 0";
+      input.style.boxSizing = "border-box";
+      form.appendChild(input);
+    } else {
+      const options = getOptions();
+
+      options.forEach((option, index) => {
+        const label = document.createElement("label");
+        label.style.display = "block";
+        label.style.padding = "12px";
+        label.style.margin = "8px 0";
+        label.style.border = "1px solid #ccc";
+        label.style.borderRadius = "6px";
+        label.style.cursor = "pointer";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "contestantAnswer";
+        radio.value = String(index);
+        radio.required = true;
+        radio.style.marginRight = "10px";
+
+        label.appendChild(radio);
+        label.appendChild(
+          document.createTextNode(
+            String.fromCharCode(65 + index) + ". " + option
+          )
+        );
+
+        form.appendChild(label);
+      });
+    }
+
+    submitButton = document.createElement("button");
+    submitButton.type = "submit";
+    submitButton.textContent = "Submit Answer";
+    submitButton.style.display = "block";
+    submitButton.style.padding = "12px 24px";
+    submitButton.style.marginTop = "16px";
+    submitButton.style.cursor = "pointer";
+
+    form.appendChild(submitButton);
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+
+      if (questionFinished) return;
+
+      const selected = form.querySelector(
+        '[name="contestantAnswer"]:checked'
+      );
+
+      const textInput = form.querySelector(
+        'input[name="contestantAnswer"][type="text"]'
+      );
+
+      if (!selected && !textInput) {
+        showMessage("Please select an answer.");
+        return;
+      }
+
+      const value = selected
+        ? selected.value
+        : textInput.value.trim();
+
+      if (!value) {
+        showMessage("Please enter your answer.");
+        return;
+      }
+
+      const isCorrect = selected
+        ? isCorrectAnswer(value)
+        : normalize(value) === normalize(currentQuestion.answer);
+
+      finishQuestion(isCorrect);
+    });
+
+    optionsElement.appendChild(form);
   }
 
   if (readButton) {
@@ -256,9 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const textToRead = [
         currentQuestion.question,
-        ...(Array.isArray(currentQuestion.options)
-          ? currentQuestion.options
-          : [])
+        ...getOptions()
       ].join(". ");
 
       const speech = new SpeechSynthesisUtterance(textToRead);
@@ -279,10 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTimer();
 
     if (seconds <= 0) {
-      stopTimer();
-      showMessage(
-        "Time is up! Judge, please mark the answer CORRECT or WRONG."
-      );
+      finishQuestion(false, true);
     }
   }, 1000);
 });
