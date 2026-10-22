@@ -36,25 +36,33 @@ document.addEventListener("DOMContentLoaded", () => {
     "bible"
   );
 
-  const questionNumber =
+  const questionNumber = String(
     params.get("questionNumber") ||
     params.get("number") ||
     localStorage.getItem("selectedQuestionNumber") ||
-    "";
+    ""
+  );
 
   const archdeaconry =
     params.get("archdeaconry") ||
     localStorage.getItem("selectedArchdeaconry") ||
     "";
 
+  const topic = normalize(
+    params.get("topic") ||
+    localStorage.getItem("selectedBibleTopic") ||
+    ""
+  );
+
+  const topicName =
+    localStorage.getItem("selectedBibleTopicName") || "";
+
   let seconds = 30;
   let timerInterval = null;
   let questionFinished = false;
 
   function showMessage(message) {
-    if (messageElement) {
-      messageElement.textContent = message;
-    }
+    if (messageElement) messageElement.textContent = message;
   }
 
   function stopTimer() {
@@ -65,9 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateTimer() {
-    if (timerElement) {
-      timerElement.textContent = seconds;
-    }
+    if (timerElement) timerElement.textContent = seconds;
   }
 
   function findQuestion() {
@@ -75,42 +81,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!Array.isArray(questions)) return null;
 
-    return questions.find((item) => {
-      const sameCategory =
-        normalize(item.category) === category;
+    return questions.find(item => {
+      const sameCategory = normalize(item.category) === category;
+      const sameNumber = String(item.questionNumber) === questionNumber;
 
-      const sameNumber =
-        String(item.questionNumber) === String(questionNumber);
+      const sameTopic =
+        category !== "bible" || normalize(item.topic) === topic;
 
       const sameArchdeaconry =
         !item.archdeaconry ||
         !archdeaconry ||
         normalize(item.archdeaconry) === normalize(archdeaconry);
 
-      return sameCategory && sameNumber && sameArchdeaconry;
+      return sameCategory && sameNumber && sameTopic && sameArchdeaconry;
     });
   }
 
   const currentQuestion = findQuestion();
 
   function returnToArchdeaconry() {
-    const destination = new URL(
-      "archdeaconry.html",
-      window.location.href
-    );
-
-    destination.searchParams.set("category", category);
-
-    if (archdeaconry) {
-      destination.searchParams.set("archdeaconry", archdeaconry);
-    }
-
-    window.location.href = destination.href;
+    window.location.href = "archdeaconry.html";
   }
 
   function markQuestionUsed() {
     const used = getJSON("usedQuestions", []);
-    const key = JSON.stringify([category, String(questionNumber)]);
+    const key = JSON.stringify([
+      category,
+      category === "bible" ? topic : "",
+      questionNumber
+    ]);
 
     if (!used.includes(key)) {
       used.push(key);
@@ -138,10 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const points = isCorrect ? 5 : 0;
 
-    if (Object.prototype.hasOwnProperty.call(
-      scores[contestant],
-      category
-    )) {
+    if (Object.prototype.hasOwnProperty.call(scores[contestant], category)) {
       scores[contestant][category] =
         (Number(scores[contestant][category]) || 0) + points;
     }
@@ -182,12 +178,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (!currentQuestion) {
-    if (questionElement) {
-      questionElement.textContent = "Question not found.";
-    }
+    if (questionElement) questionElement.textContent = "Question not found.";
 
     showMessage(
-      "Please check the imported questions and selected question number."
+      "Please check the imported questions, selected topic and question number."
     );
 
     if (optionsElement) optionsElement.replaceChildren();
@@ -207,12 +201,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (archdeaconryElement) {
-    archdeaconryElement.textContent = archdeaconry || "—";
+    archdeaconryElement.textContent =
+      category === "bible" ? (topicName || topic.replace(/_/g, " ")) : (archdeaconry || "—");
   }
 
-  if (numberElement) {
-    numberElement.textContent = questionNumber;
-  }
+  if (numberElement) numberElement.textContent = questionNumber;
 
   if (optionsElement) {
     optionsElement.replaceChildren();
@@ -232,7 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const optionElement = document.createElement("p");
         optionElement.textContent =
           String.fromCharCode(65 + index) + ". " + option;
-
         optionsElement.appendChild(optionElement);
       });
     }
