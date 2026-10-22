@@ -3,14 +3,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const questionElement = document.getElementById("questionText");
   const optionsElement = document.getElementById("answerOptions");
   const timerElement = document.getElementById("timer");
-  const correctButton = document.getElementById("correctBtn");
-  const wrongButton = document.getElementById("wrongBtn");
   const answerElement = document.getElementById("correctAnswer");
   const messageElement = document.getElementById("answerMessage");
   const categoryElement = document.getElementById("questionCategory");
   const archdeaconryElement = document.getElementById("questionArchdeaconry");
   const numberElement = document.getElementById("questionNumber");
   const readButton = document.getElementById("readQuestionBtn");
+
+  const correctButton = document.getElementById("correctBtn");
+  const wrongButton = document.getElementById("wrongBtn");
+
+  if (correctButton) correctButton.style.display = "none";
+  if (wrongButton) wrongButton.style.display = "none";
 
   const params = new URLSearchParams(window.location.search);
 
@@ -59,9 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let seconds = 30;
   let timerInterval = null;
   let questionFinished = false;
+  let submitButton = null;
+  let currentQuestion = null;
 
   function showMessage(message) {
-    if (messageElement) messageElement.textContent = message;
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
   }
 
   function stopTimer() {
@@ -72,7 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateTimer() {
-    if (timerElement) timerElement.textContent = seconds;
+    if (timerElement) {
+      timerElement.textContent = seconds;
+    }
   }
 
   function findQuestion() {
@@ -81,31 +91,63 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!Array.isArray(questions)) return null;
 
     return questions.find(item => {
-      const sameCategory = normalize(item.category) === category;
+      const sameCategory =
+        normalize(item.category) === category;
+
       const sameNumber =
         String(item.questionNumber) === questionNumber;
 
       const sameTopic =
-        category !== "bible" || normalize(item.topic) === topic;
+        category !== "bible" ||
+        normalize(item.topic) === topic;
 
       const sameArchdeaconry =
         !item.archdeaconry ||
         !archdeaconry ||
-        normalize(item.archdeaconry) === normalize(archdeaconry);
+        normalize(item.archdeaconry) ===
+          normalize(archdeaconry);
 
-      return sameCategory && sameNumber &&
-        sameTopic && sameArchdeaconry;
+      return sameCategory &&
+        sameNumber &&
+        sameTopic &&
+        sameArchdeaconry;
     });
   }
 
-  const currentQuestion = findQuestion();
+  function getOptions() {
+    if (Array.isArray(currentQuestion.options)) {
+      return currentQuestion.options;
+    }
 
-  function returnToArchdeaconry() {
-    window.location.href = "archdeaconry.html";
+    return [
+      currentQuestion.optionA,
+      currentQuestion.optionB,
+      currentQuestion.optionC,
+      currentQuestion.optionD
+    ].filter(value => value !== undefined && value !== "");
+  }
+
+  function isCorrectAnswer(selectedValue) {
+    const options = getOptions();
+    const answer = String(currentQuestion.answer ?? "").trim();
+
+    if (/^[A-D]$/i.test(answer)) {
+      const index = answer.toUpperCase().charCodeAt(0) - 65;
+      return selectedValue === String(index);
+    }
+
+    const selectedOption = options[Number(selectedValue)];
+
+    return normalize(selectedValue) === normalize(answer) ||
+      (
+        selectedOption !== undefined &&
+        normalize(selectedOption) === normalize(answer)
+      );
   }
 
   function markQuestionUsed() {
     const used = getJSON("usedQuestions", []);
+
     const key = JSON.stringify([
       category,
       category === "bible" ? topic : "",
@@ -154,33 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("quizScores", JSON.stringify(scores));
   }
 
-  function getOptions() {
-    return Array.isArray(currentQuestion.options)
-      ? currentQuestion.options
-      : [
-          currentQuestion.optionA,
-          currentQuestion.optionB,
-          currentQuestion.optionC,
-          currentQuestion.optionD
-        ].filter(value => value !== undefined && value !== "");
-  }
-
-  function isCorrectAnswer(selectedValue) {
-    const options = getOptions();
-    const answer = String(currentQuestion.answer ?? "").trim();
-
-    if (/^[A-D]$/i.test(answer)) {
-      const index = answer.toUpperCase().charCodeAt(0) - 65;
-      return index >= 0 &&
-        index < options.length &&
-        selectedValue === String(index);
-    }
-
-    return normalize(selectedValue) === normalize(answer) ||
-      (
-        options[Number(selectedValue)] !== undefined &&
-        normalize(options[Number(selectedValue)]) === normalize(answer)
-      );
+  function returnToArchdeaconry() {
+    window.location.href = "archdeaconry.html";
   }
 
   function finishQuestion(isCorrect, timedOut = false) {
@@ -196,9 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ).forEach(input => {
       input.disabled = true;
     });
-
-    if (correctButton) correctButton.disabled = true;
-    if (wrongButton) wrongButton.disabled = true;
 
     saveScore(isCorrect);
     markQuestionUsed();
@@ -220,10 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(returnToArchdeaconry, 2500);
   }
 
-  let submitButton = null;
-
-  if (correctButton) correctButton.style.display = "none";
-  if (wrongButton) wrongButton.style.display = "none";
+  currentQuestion = findQuestion();
 
   if (!currentQuestion) {
     if (questionElement) {
@@ -282,359 +293,58 @@ document.addEventListener("DOMContentLoaded", () => {
       input.placeholder = "Type your answer here";
       input.autocomplete = "off";
       input.required = true;
-      input.style.display = "block";
-      input.style.width = "100%";
-      input.style.padding = "12px";
-      input.style.margin = "12px 0";
-      input.style.boxSizing = "border-box";
-      form.appendChild(input);
-    } else {
-      const options = getOptions();
-
-document.addEventListener("DOMContentLoaded", () => {
-  const questionElement = document.getElementById("questionText");
-  const optionsElement = document.getElementById("answerOptions");
-  const timerElement = document.getElementById("timer");
-  const correctButton = document.getElementById("correctBtn");
-  const wrongButton = document.getElementById("wrongBtn");
-  const answerElement = document.getElementById("correctAnswer");
-  const messageElement = document.getElementById("answerMessage");
-  const categoryElement = document.getElementById("questionCategory");
-  const archdeaconryElement = document.getElementById("questionArchdeaconry");
-  const numberElement = document.getElementById("questionNumber");
-  const readButton = document.getElementById("readQuestionBtn");
-
-  const params = new URLSearchParams(window.location.search);
-
-  function getJSON(key, fallback) {
-    try {
-      return JSON.parse(localStorage.getItem(key)) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function normalize(value) {
-    return String(value ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/[\s-]+/g, "_");
-  }
-
-  const category = normalize(
-    params.get("category") ||
-    localStorage.getItem("selectedCategory") ||
-    "bible"
-  );
-
-  const questionNumber = String(
-    params.get("questionNumber") ||
-    params.get("number") ||
-    localStorage.getItem("selectedQuestionNumber") ||
-    ""
-  );
-
-  const archdeaconry =
-    params.get("archdeaconry") ||
-    localStorage.getItem("selectedArchdeaconry") ||
-    "";
-
-  const topic = normalize(
-    params.get("topic") ||
-    localStorage.getItem("selectedBibleTopic") ||
-    ""
-  );
-
-  const topicName =
-    localStorage.getItem("selectedBibleTopicName") || "";
-
-  let seconds = 30;
-  let timerInterval = null;
-  let questionFinished = false;
-
-  function showMessage(message) {
-    if (messageElement) messageElement.textContent = message;
-  }
-
-  function stopTimer() {
-    if (timerInterval !== null) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-  }
-
-  function updateTimer() {
-    if (timerElement) timerElement.textContent = seconds;
-  }
-
-  function findQuestion() {
-    const questions = getJSON("quizQuestions", []);
-
-    if (!Array.isArray(questions)) return null;
-
-    return questions.find(item => {
-      const sameCategory = normalize(item.category) === category;
-      const sameNumber =
-        String(item.questionNumber) === questionNumber;
-
-      const sameTopic =
-        category !== "bible" || normalize(item.topic) === topic;
-
-      const sameArchdeaconry =
-        !item.archdeaconry ||
-        !archdeaconry ||
-        normalize(item.archdeaconry) === normalize(archdeaconry);
-
-      return sameCategory && sameNumber &&
-        sameTopic && sameArchdeaconry;
-    });
-  }
-
-  const currentQuestion = findQuestion();
-
-  function returnToArchdeaconry() {
-    window.location.href = "archdeaconry.html";
-  }
-
-  function markQuestionUsed() {
-    const used = getJSON("usedQuestions", []);
-    const key = JSON.stringify([
-      category,
-      category === "bible" ? topic : "",
-      questionNumber
-    ]);
-
-    if (!used.includes(key)) {
-      used.push(key);
-      localStorage.setItem("usedQuestions", JSON.stringify(used));
-    }
-  }
-
-  function saveScore(isCorrect) {
-    const scores = getJSON("quizScores", {});
-
-    const contestant =
-      localStorage.getItem("contestantName") ||
-      localStorage.getItem("participantName") ||
-      localStorage.getItem("teamName") ||
-      "Contestant";
-
-    if (!scores[contestant] ||
-        typeof scores[contestant] !== "object") {
-      scores[contestant] = {
-        bible: 0,
-        anglicanism: 0,
-        current_affairs: 0,
-        overall: 0
-      };
-    }
-
-    const points = isCorrect ? 5 : 0;
-
-    if (Object.prototype.hasOwnProperty.call(
-      scores[contestant], category
-    )) {
-      scores[contestant][category] =
-        (Number(scores[contestant][category]) || 0) + points;
-    }
-
-    scores[contestant].overall =
-      (Number(scores[contestant].bible) || 0) +
-      (Number(scores[contestant].anglicanism) || 0) +
-      (Number(scores[contestant].current_affairs) || 0);
-
-    localStorage.setItem("quizScores", JSON.stringify(scores));
-  }
-
-  function getOptions() {
-    return Array.isArray(currentQuestion.options)
-      ? currentQuestion.options
-      : [
-          currentQuestion.optionA,
-          currentQuestion.optionB,
-          currentQuestion.optionC,
-          currentQuestion.optionD
-        ].filter(value => value !== undefined && value !== "");
-  }
-
-  function isCorrectAnswer(selectedValue) {
-    const options = getOptions();
-    const answer = String(currentQuestion.answer ?? "").trim();
-
-    if (/^[A-D]$/i.test(answer)) {
-      const index = answer.toUpperCase().charCodeAt(0) - 65;
-      return index >= 0 &&
-        index < options.length &&
-        selectedValue === String(index);
-    }
-
-    return normalize(selectedValue) === normalize(answer) ||
-      (
-        options[Number(selectedValue)] !== undefined &&
-        normalize(options[Number(selectedValue)]) === normalize(answer)
-      );
-  }
-
-  function finishQuestion(isCorrect, timedOut = false) {
-    if (questionFinished) return;
-
-    questionFinished = true;
-    stopTimer();
-
-    if (submitButton) submitButton.disabled = true;
-
-    document.querySelectorAll(
-      'input[name="contestantAnswer"]'
-    ).forEach(input => {
-      input.disabled = true;
-    });
-
-    if (correctButton) correctButton.disabled = true;
-    if (wrongButton) wrongButton.disabled = true;
-
-    saveScore(isCorrect);
-    markQuestionUsed();
-
-    if (answerElement) {
-      answerElement.style.display = "block";
-      answerElement.textContent =
-        "Correct answer: " + currentQuestion.answer;
-    }
-
-    if (timedOut) {
-      showMessage("Time is up! No marks awarded.");
-    } else if (isCorrect) {
-      showMessage("Correct answer! 5 marks awarded.");
-    } else {
-      showMessage("Wrong answer. 0 marks awarded.");
-    }
-
-    setTimeout(returnToArchdeaconry, 2500);
-  }
-
-  let submitButton = null;
-
-  if (correctButton) correctButton.style.display = "none";
-  if (wrongButton) wrongButton.style.display = "none";
-
-  if (!currentQuestion) {
-    if (questionElement) {
-      questionElement.textContent = "Question not found.";
-    }
-
-    showMessage(
-      "Please check the imported questions, selected topic and question number."
-    );
-
-    if (optionsElement) optionsElement.replaceChildren();
-    if (timerElement) timerElement.textContent = "—";
-
-    return;
-  }
-
-  if (questionElement) {
-    questionElement.textContent = currentQuestion.question;
-  }
-
-  if (categoryElement) {
-    categoryElement.textContent = category.replace(/_/g, " ");
-  }
-
-  if (archdeaconryElement) {
-    archdeaconryElement.textContent =
-      category === "bible"
-        ? (topicName || topic.replace(/_/g, " "))
-        : (archdeaconry || "—");
-  }
-
-  if (numberElement) {
-    numberElement.textContent = questionNumber;
-  }
-
-  if (answerElement) {
-    answerElement.style.display = "none";
-    answerElement.textContent = "";
-  }
-
-  if (optionsElement) {
-    optionsElement.replaceChildren();
-
-    const type = normalize(currentQuestion.type);
-    const isFillBlank =
-      type === "fill_blank" || type === "fillinthegap";
-
-    const form = document.createElement("form");
-    form.id = "contestantAnswerForm";
-
-    if (isFillBlank) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.name = "contestantAnswer";
-      input.id = "contestantAnswer";
-      input.placeholder = "Type your answer here";
-      input.autocomplete = "off";
-      input.required = true;
-      input.style.display = "block";
-      input.style.width = "100%";
-      input.style.padding = "12px";
-      input.style.margin = "12px 0";
-      input.style.boxSizing = "border-box";
       form.appendChild(input);
     } else {
       const options = getOptions();
 
       options.forEach((option, index) => {
         const label = document.createElement("label");
-        label.style.display = "block";
-        label.style.padding = "12px";
-        label.style.margin = "8px 0";
-        label.style.border = "1px solid #ccc";
-        label.style.borderRadius = "6px";
-        label.style.cursor = "pointer";
+        label.className = "answer-option";
 
         const radio = document.createElement("input");
         radio.type = "radio";
         radio.name = "contestantAnswer";
         radio.value = String(index);
         radio.required = true;
-        radio.style.marginRight = "10px";
+
+        const optionText = document.createElement("span");
+        optionText.className = "answer-option-text";
+        optionText.textContent =
+          String.fromCharCode(65 + index) + ". " + option;
 
         label.appendChild(radio);
-        label.appendChild(
-          document.createTextNode(
-            String.fromCharCode(65 + index) + ". " + option
-          )
+        label.appendChild(optionText);
+        form.appendChild(label);
+      });
+    }
+
+    submitButton = document.createElement("button");
+    submitButton.type = "submit";
+    submitButton.className = "submit-button";
+    submitButton.textContent = "Submit Answer";
+
+    form.appendChild(submitButton);
+    optionsElement.appendChild(form);
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+
+      if (questionFinished) return;
+
+      const selected = form.querySelector(
+        'input[name="contestantAnswer"]:checked'
+      );
+
+      const textInput = form.querySelector(
+        'input[name="contestantAnswer"][type="text"]'
+      );
+
+      if (!selected && !textInput) {
+        showMessage(
+          isFillBlank
+            ? "Please enter your answer."
+            : "Please select an answer."
         );
-
-        form.appendChild(label);
-      });
-    }
-
-    submitButton = document.createElement("button");
-    submitButton.type = "submit";
-    submitButton.textContent = "Submit Answer";
-    submitButton.style.display = "block";
-    submitButton.style.padding = "12px 24px";
-    submitButton.style.marginTop = "16px";
-    submitButton.style.cursor = "pointer";
-
-    form.appendChild(submitButton);
-
-    form.addEventListener("submit", event => {
-      event.preventDefault();
-
-      if (questionFinished) return;
-
-      const selected = form.querySelector(
-        '[name="contestantAnswer"]:checked'
-      );
-
-      const textInput = form.querySelector(
-        'input[name="contestantAnswer"][type="text"]'
-      );
-
-      if (!selected && !textInput) {
-        showMessage("Please select an answer.");
         return;
       }
 
@@ -653,96 +363,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       finishQuestion(isCorrect);
     });
-
-    optionsElement.appendChild(form);
-  }
-
-  if (readButton) {
-    readButton.addEventListener("click", () => {
-      if (!("speechSynthesis" in window)) {
-        showMessage("Read-aloud is not supported in this browser.");
-        return;
-      }
-
-      window.speechSynthesis.cancel();
-
-      const textToRead = [
-        currentQuestion.question,
-        ...getOptions()
-      ].join(". ");
-
-      const speech = new SpeechSynthesisUtterance(textToRead);
-      speech.lang = "en-NG";
-      window.speechSynthesis.speak(speech);
-    });
-  }
-
-  updateTimer();
-
-  timerInterval = setInterval(() => {
-    if (questionFinished) {
-      stopTimer();
-      return;
-    }
-
-    seconds--;
-    updateTimer();
-
-    if (seconds <= 0) {
-      finishQuestion(false, true);
-    }
-  }, 1000);
-});
-
-        form.appendChild(label);
-      });
-    }
-
-    submitButton = document.createElement("button");
-    submitButton.type = "submit";
-    submitButton.textContent = "Submit Answer";
-    submitButton.style.display = "block";
-    submitButton.style.padding = "12px 24px";
-    submitButton.style.marginTop = "16px";
-    submitButton.style.cursor = "pointer";
-
-    form.appendChild(submitButton);
-
-    form.addEventListener("submit", event => {
-      event.preventDefault();
-
-      if (questionFinished) return;
-
-      const selected = form.querySelector(
-        '[name="contestantAnswer"]:checked'
-      );
-
-      const textInput = form.querySelector(
-        'input[name="contestantAnswer"][type="text"]'
-      );
-
-      if (!selected && !textInput) {
-        showMessage("Please select an answer.");
-        return;
-      }
-
-      const value = selected
-        ? selected.value
-        : textInput.value.trim();
-
-      if (!value) {
-        showMessage("Please enter your answer.");
-        return;
-      }
-
-      const isCorrect = selected
-        ? isCorrectAnswer(value)
-        : normalize(value) === normalize(currentQuestion.answer);
-
-      finishQuestion(isCorrect);
-    });
-
-    optionsElement.appendChild(form);
   }
 
   if (readButton) {
