@@ -1,39 +1,23 @@
+
 document.addEventListener("DOMContentLoaded", () => {
-  const questionElement = document.getElementById("question");
-  const optionsElement = document.getElementById("options");
+  const questionElement = document.getElementById("questionText");
+  const optionsElement = document.getElementById("answerOptions");
   const timerElement = document.getElementById("timer");
   const correctButton = document.getElementById("correctBtn");
   const wrongButton = document.getElementById("wrongBtn");
   const answerElement = document.getElementById("correctAnswer");
-  const messageElement = document.getElementById("message");
+  const messageElement = document.getElementById("answerMessage");
+
+  const categoryElement = document.getElementById("questionCategory");
+  const archdeaconryElement = document.getElementById("questionArchdeaconry");
+  const numberElement = document.getElementById("questionNumber");
+  const readButton = document.getElementById("readQuestionBtn");
 
   const params = new URLSearchParams(window.location.search);
 
-  const category = (
-    params.get("category") ||
-    localStorage.getItem("selectedCategory") ||
-    "bible"
-  ).toLowerCase();
-
-  const questionNumber =
-    params.get("questionNumber") ||
-    params.get("number") ||
-    localStorage.getItem("selectedQuestionNumber") ||
-    "";
-
-  const archdeaconry =
-    params.get("archdeaconry") ||
-    localStorage.getItem("selectedArchdeaconry") ||
-    "";
-
-  let timer = 30;
-  let timerInterval = null;
-  let questionFinished = false;
-
   function getJSON(key, fallback) {
     try {
-      const value = JSON.parse(localStorage.getItem(key));
-      return value ?? fallback;
+      return JSON.parse(localStorage.getItem(key)) ?? fallback;
     } catch {
       return fallback;
     }
@@ -46,9 +30,30 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/[\s-]+/g, "_");
   }
 
-  function showMessage(text) {
+  const category = normalize(
+    params.get("category") ||
+    localStorage.getItem("selectedCategory") ||
+    "bible"
+  );
+
+  const questionNumber =
+    params.get("questionNumber") ||
+    params.get("number") ||
+    localStorage.getItem("selectedQuestionNumber") ||
+    "";
+
+  const archdeaconry =
+    params.get("archdeaconry") ||
+    localStorage.getItem("selectedArchdeaconry") ||
+    "";
+
+  let seconds = 30;
+  let timerInterval = null;
+  let questionFinished = false;
+
+  function showMessage(message) {
     if (messageElement) {
-      messageElement.textContent = text;
+      messageElement.textContent = message;
     }
   }
 
@@ -61,21 +66,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateTimer() {
     if (timerElement) {
-      timerElement.textContent = `Time: ${timer}s`;
+      timerElement.textContent = seconds;
     }
   }
 
-  function getAllQuestions() {
-    const imported = getJSON("quizQuestions", []);
-    return Array.isArray(imported) ? imported : [];
-  }
-
   function findQuestion() {
-    const questions = getAllQuestions();
+    const questions = getJSON("quizQuestions", []);
+
+    if (!Array.isArray(questions)) return null;
 
     return questions.find((item) => {
       const sameCategory =
-        normalize(item.category) === normalize(category);
+        normalize(item.category) === category;
 
       const sameNumber =
         String(item.questionNumber) === String(questionNumber);
@@ -89,75 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function getUsedQuestions() {
-    return getJSON("usedQuestions", []);
-  }
-
-  function markQuestionUsed() {
-    const used = getUsedQuestions();
-    const key = JSON.stringify([
-      normalize(category),
-      String(questionNumber),
-    ]);
-
-    if (!used.includes(key)) {
-      used.push(key);
-      localStorage.setItem("usedQuestions", JSON.stringify(used));
-    }
-  }
-
-  function getScores() {
-    return getJSON("quizScores", {});
-  }
-
-  function saveScore(isCorrect) {
-    const scores = getScores();
-
-    const contestant =
-      localStorage.getItem("contestantName") ||
-      localStorage.getItem("participantName") ||
-      localStorage.getItem("teamName") ||
-      "Contestant";
-
-    if (!scores[contestant]) {
-      scores[contestant] = {
-        bible: 0,
-        anglicanism: 0,
-        current_affairs: 0,
-        overall: 0,
-      };
-    }
-
-    if (typeof scores[contestant] === "number") {
-      scores[contestant] = {
-        bible: 0,
-        anglicanism: 0,
-        current_affairs: 0,
-        overall: scores[contestant],
-      };
-    }
-
-    const points = isCorrect ? 5 : 0;
-    const normalizedCategory = normalize(category);
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        scores[contestant],
-        normalizedCategory
-      )
-    ) {
-      scores[contestant][normalizedCategory] += points;
-    } else {
-      scores[contestant][normalizedCategory] = points;
-    }
-
-    scores[contestant].overall =
-      (Number(scores[contestant].bible) || 0) +
-      (Number(scores[contestant].anglicanism) || 0) +
-      (Number(scores[contestant].current_affairs) || 0);
-
-    localStorage.setItem("quizScores", JSON.stringify(scores));
-  }
+  const currentQuestion = findQuestion();
 
   function returnToArchdeaconry() {
     const destination = new URL(
@@ -172,6 +106,52 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.location.href = destination.href;
+  }
+
+  function markQuestionUsed() {
+    const used = getJSON("usedQuestions", []);
+    const key = JSON.stringify([category, String(questionNumber)]);
+
+    if (!used.includes(key)) {
+      used.push(key);
+      localStorage.setItem("usedQuestions", JSON.stringify(used));
+    }
+  }
+
+  function saveScore(isCorrect) {
+    const scores = getJSON("quizScores", {});
+
+    const contestant =
+      localStorage.getItem("contestantName") ||
+      localStorage.getItem("participantName") ||
+      localStorage.getItem("teamName") ||
+      "Contestant";
+
+    if (!scores[contestant] || typeof scores[contestant] !== "object") {
+      scores[contestant] = {
+        bible: 0,
+        anglicanism: 0,
+        current_affairs: 0,
+        overall: 0
+      };
+    }
+
+    const points = isCorrect ? 5 : 0;
+
+    if (Object.prototype.hasOwnProperty.call(
+      scores[contestant],
+      category
+    )) {
+      scores[contestant][category] =
+        (Number(scores[contestant][category]) || 0) + points;
+    }
+
+    scores[contestant].overall =
+      (Number(scores[contestant].bible) || 0) +
+      (Number(scores[contestant].anglicanism) || 0) +
+      (Number(scores[contestant].current_affairs) || 0);
+
+    localStorage.setItem("quizScores", JSON.stringify(scores));
   }
 
   function finishQuestion(isCorrect) {
@@ -189,19 +169,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (answerElement) {
       answerElement.style.display = "block";
       answerElement.textContent =
-        `Correct answer: ${currentQuestion.answer}`;
+        "Correct answer: " + currentQuestion.answer;
     }
 
     showMessage(
       isCorrect
-        ? "Marked CORRECT. 5 marks awarded."
-        : "Marked WRONG. 0 marks awarded."
+        ? "Marked CORRECT — 5 marks awarded."
+        : "Marked WRONG — 0 marks awarded."
     );
 
     setTimeout(returnToArchdeaconry, 2500);
   }
-
-  const currentQuestion = findQuestion();
 
   if (!currentQuestion) {
     if (questionElement) {
@@ -209,13 +187,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     showMessage(
-      "Check that the question was imported and the question number is correct."
+      "Please check the imported questions and selected question number."
     );
 
     if (optionsElement) optionsElement.replaceChildren();
-    if (timerElement) timerElement.textContent = "";
     if (correctButton) correctButton.disabled = true;
     if (wrongButton) wrongButton.disabled = true;
+    if (timerElement) timerElement.textContent = "—";
 
     return;
   }
@@ -224,18 +202,26 @@ document.addEventListener("DOMContentLoaded", () => {
     questionElement.textContent = currentQuestion.question;
   }
 
+  if (categoryElement) {
+    categoryElement.textContent = category.replace(/_/g, " ");
+  }
+
+  if (archdeaconryElement) {
+    archdeaconryElement.textContent = archdeaconry || "—";
+  }
+
+  if (numberElement) {
+    numberElement.textContent = questionNumber;
+  }
+
   if (optionsElement) {
     optionsElement.replaceChildren();
 
     const type = normalize(currentQuestion.type);
 
-    if (
-      type === "fill_blank" ||
-      type === "fillinthegap" ||
-      type === "fillintheblank"
-    ) {
+    if (type === "fill_blank" || type === "fillinthegap") {
       const note = document.createElement("p");
-      note.textContent = "Question type: Fill in the gap";
+      note.textContent = "Fill in the gap";
       optionsElement.appendChild(note);
     } else {
       const options = Array.isArray(currentQuestion.options)
@@ -245,7 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
       options.forEach((option, index) => {
         const optionElement = document.createElement("p");
         optionElement.textContent =
-          `${String.fromCharCode(65 + index)}. ${option}`;
+          String.fromCharCode(65 + index) + ". " + option;
+
         optionsElement.appendChild(optionElement);
       });
     }
@@ -257,14 +244,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (correctButton) {
-    correctButton.addEventListener("click", () => {
-      finishQuestion(true);
-    });
+    correctButton.disabled = false;
+    correctButton.addEventListener("click", () => finishQuestion(true));
   }
 
   if (wrongButton) {
-    wrongButton.addEventListener("click", () => {
-      finishQuestion(false);
+    wrongButton.disabled = false;
+    wrongButton.addEventListener("click", () => finishQuestion(false));
+  }
+
+  if (readButton) {
+    readButton.addEventListener("click", () => {
+      if (!("speechSynthesis" in window)) {
+        showMessage("Read-aloud is not supported in this browser.");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const textToRead = [
+        currentQuestion.question,
+        ...(Array.isArray(currentQuestion.options)
+          ? currentQuestion.options
+          : [])
+      ].join(". ");
+
+      const speech = new SpeechSynthesisUtterance(textToRead);
+      speech.lang = "en-NG";
+      window.speechSynthesis.speak(speech);
     });
   }
 
@@ -276,18 +283,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    timer--;
+    seconds--;
+    updateTimer();
 
-    if (timer <= 0) {
-      timer = 0;
-      updateTimer();
+    if (seconds <= 0) {
       stopTimer();
       showMessage(
-        "Time is up. Judge: please mark the answer CORRECT or WRONG."
+        "Time is up! Judge, please mark the answer CORRECT or WRONG."
       );
-      return;
     }
-
-    updateTimer();
   }, 1000);
 });
