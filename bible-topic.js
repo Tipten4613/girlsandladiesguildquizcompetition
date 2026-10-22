@@ -1,24 +1,30 @@
 
 document.addEventListener("DOMContentLoaded", () => {
-  const buttons = document.querySelectorAll(".topic-card");
-  const message = document.getElementById("topicMessage");
+  const topicCards = document.querySelectorAll(".topic-card");
+  const topicMessage = document.getElementById("topicMessage");
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const topic = button.dataset.topic;
-      const topicName = button.dataset.topicName;
+  topicCards.forEach(card => {
+    card.addEventListener("click", () => {
+      const topic = card.dataset.topic;
+      const topicName = card.dataset.topicName;
 
-      localStorage.setItem("selectedCategory", "bible");
-      localStorage.setItem("selectedCategoryName", "Bible");
+      if (!topic || !topicName) {
+        if (topicMessage) {
+          topicMessage.textContent = "Unable to select this topic. Please try again.";
+        }
+        return;
+      }
+
       localStorage.setItem("selectedBibleTopic", topic);
       localStorage.setItem("selectedBibleTopicName", topicName);
 
-      if (message) {
-        message.textContent = `${topicName} selected. Opening Archdeaconry selection...`;
+      if (topicMessage) {
+        topicMessage.textContent =
+          `${topicName} selected. Opening question numbers...`;
       }
 
       setTimeout(() => {
-        window.location.href = "archdeaconry.html";
+        window.location.href = "question-number.html";
       }, 300);
     });
   });
