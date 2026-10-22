@@ -233,7 +233,12 @@ if (timedOut) {
 } else {
   showMessage("Wrong answer!");
 }
+const messageElement = document.getElementById("answerMessage");
 
+if (messageElement) {
+  messageElement.style.color = "red";
+  messageElement.style.fontWeight = "bold";
+}
 if (answerElement) {
   answerElement.style.display = "block";
   answerElement.textContent =
