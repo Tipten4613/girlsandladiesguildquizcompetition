@@ -19,10 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   function normalizeCategory(value) {
-    return (value || "")
+    return String(value || "")
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, "_");
+      .replace(/[\s-]+/g, "_");
   }
 
   let category = normalizeCategory(
@@ -43,18 +43,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (Array.isArray(savedAttendance)) {
       attendanceData = savedAttendance;
     }
-  } catch (error) {
+  } catch {
     attendanceData = [];
   }
 
-  // Display the current category and highlight its button.
   function updateCategoryDisplay() {
     const name = categories[category];
 
     localStorage.setItem("selectedCategory", category);
     localStorage.setItem("selectedCategoryName", name);
 
-    selectedCategoryName.textContent = name;
+    if (selectedCategoryName) {
+      selectedCategoryName.textContent = name;
+    }
 
     categoryButtons.forEach(button => {
       const active = button.dataset.category === category;
@@ -64,8 +65,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Show only archdeaconries marked Present.
   function renderArchdeaconries() {
+    if (!archdeaconryGrid || !archdeaconryMessage) return;
+
     archdeaconryGrid.replaceChildren();
 
     const presentArchdeaconries = attendanceData.filter(
@@ -111,17 +113,22 @@ document.addEventListener("DOMContentLoaded", () => {
           archdeaconry.name
         );
 
-        window.location.href = "question-number.html";
+        if (category === "bible") {
+          window.location.href = "bible-topic.html";
+        } else {
+          localStorage.removeItem("selectedBibleTopic");
+          localStorage.removeItem("selectedBibleTopicName");
+          window.location.href = "question-number.html";
+        }
       });
 
       archdeaconryGrid.appendChild(card);
     });
   }
 
-  // Switch category without leaving this page.
   categoryButtons.forEach(button => {
     button.addEventListener("click", () => {
-      const newCategory = button.dataset.category;
+      const newCategory = normalizeCategory(button.dataset.category);
 
       if (!categories[newCategory]) return;
 
@@ -130,6 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       archdeaconryMessage.textContent =
         `${categories[category]} selected. Choose an archdeaconry below.`;
+
+      renderArchdeaconries();
     });
   });
 
