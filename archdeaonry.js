@@ -109,11 +109,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
       card.addEventListener("click", () => {
         localStorage.setItem(
-   if (category === "bible") {
+ if (category === "bible") {
   const selectedTopic = localStorage.getItem("selectedBibleTopic");
 
   if (selectedTopic) {
     window.location.href = "question-number.html";
+  } else {
+    window.location.href = "bible-topic.html";
+  }
+} else {
+  localStorage.removeItem("selectedBibleTopic");
+  localStorage.removeItem("selectedBibleTopicName");
+
+  window.location.href = "question-number.html";
+}
   } else {
     window.location.href = "bible-topic.html";
   }
