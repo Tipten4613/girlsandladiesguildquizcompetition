@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       setTimeout(() => {
-        window.location.href = "question.html";
+window.location.href = "archdeaconry.html";
       }, 300);
     });
   });
