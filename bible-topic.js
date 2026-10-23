@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       setTimeout(() => {
-        window.location.href = "question-number.html";
+        window.location.href = "question.html";
       }, 300);
     });
   });
