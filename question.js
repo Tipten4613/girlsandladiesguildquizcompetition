@@ -255,8 +255,66 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "archdeaconry.html";
   }
 
-  function finishQuestion(isCorrect, timedOut = false) {
-    if (questionFinished) return;
+
+function finishQuestion(isCorrect, timedOut = false) {
+  if (questionFinished) return;
+
+  questionFinished = true;
+  stopTimer();
+
+  // Disable the submit button immediately.
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
+
+  document.querySelectorAll(
+    'input[name="contestantAnswer"]'
+  ).forEach(input => {
+    input.disabled = true;
+  });
+
+  // SHOW FEEDBACK IMMEDIATELY.
+  if (messageElement) {
+    messageElement.style.display = "block";
+    messageElement.style.fontWeight = "bold";
+
+    if (timedOut) {
+      messageElement.textContent = "Time is up!";
+      messageElement.style.color = "red";
+    } else if (isCorrect) {
+      messageElement.textContent =
+        "Correct answer! 5 marks awarded.";
+
+      messageElement.style.color = "green";
+    } else {
+      messageElement.textContent = "Wrong answer!";
+      messageElement.style.color = "red";
+    }
+  }
+
+  // Reveal the correct answer immediately.
+  if (answerElement) {
+    answerElement.style.display = "block";
+
+    answerElement.textContent =
+      "Correct answer: " + currentQuestion.answer;
+
+    answerElement.style.color = "green";
+    answerElement.style.fontWeight = "bold";
+  }
+
+  // SAVE SCORE AFTER FEEDBACK IS DISPLAYED.
+  try {
+    saveScore(isCorrect);
+    markQuestionUsed();
+  } catch (error) {
+    console.error("Error saving quiz progress:", error);
+  }
+
+  // Return to the archdeaconry after 2.5 seconds.
+  setTimeout(returnToArchdeaconry, 2500);
+}
+
 
     questionFinished = true;
     stopTimer();
