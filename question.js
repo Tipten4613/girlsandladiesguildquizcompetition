@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const topicName =
     localStorage.getItem("selectedBibleTopicName") || "";
 
-  let seconds = 30;
+  let seconds = 40;
   let timerInterval = null;
   let questionFinished = false;
   let submitButton = null;
