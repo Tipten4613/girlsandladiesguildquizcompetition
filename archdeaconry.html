@@ -215,6 +215,27 @@
   </footer>
 
   <!-- Keep this filename exactly as it is in your project -->
-  <script src="archdeaonry.js"></script>
+
+<script>
+window.addEventListener("error", function (event) {
+  const errorBox = document.createElement("pre");
+
+  errorBox.style.cssText =
+    "background:#ffe5e5;color:#900;padding:15px;white-space:pre-wrap;";
+
+  errorBox.textContent =
+    "JavaScript Error: " +
+    event.message +
+    "\nFile: " +
+    event.filename +
+    "\nLine: " +
+    event.lineno;
+
+  document.body.appendChild(errorBox);
+});
+</script>
+
+<script src="archdeaonry.js"></script>
+
 </body>
 </html>
