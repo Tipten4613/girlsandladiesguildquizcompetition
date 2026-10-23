@@ -12,6 +12,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoryButtons =
     document.querySelectorAll(".category-switch-btn");
 
+  const bibleTopicSwitcher =
+    document.getElementById("bibleTopicSwitcher");
+
+  const changeBibleTopicBtn =
+    document.getElementById("changeBibleTopicBtn");
+
   const categories = {
     bible: "Bible",
     anglicanism: "Anglicanism",
@@ -58,15 +64,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     categoryButtons.forEach(button => {
-      const active = button.dataset.category === category;
+      const active =
+        normalizeCategory(button.dataset.category) === category;
 
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
     });
+
+    if (bibleTopicSwitcher) {
+      bibleTopicSwitcher.style.display =
+        category === "bible" ? "block" : "none";
+    }
   }
 
   function renderArchdeaconries() {
-    if (!archdeaconryGrid || !archdeaconryMessage) return;
+    if (!archdeaconryGrid || !archdeaconryMessage) {
+      console.error("Archdeaconry HTML elements not found.");
+      return;
+    }
 
     archdeaconryGrid.replaceChildren();
 
@@ -88,12 +103,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     presentArchdeaconries.forEach((archdeaconry, index) => {
       const card = document.createElement("button");
+
       card.type = "button";
       card.className = "archdeaconry-card";
 
       const details = document.createElement("div");
+
       const numberLabel = document.createElement("span");
+
       const name = document.createElement("h3");
+
       const arrow = document.createElement("span");
 
       numberLabel.textContent =
@@ -105,36 +124,28 @@ document.addEventListener("DOMContentLoaded", () => {
       arrow.textContent = "→";
 
       details.append(numberLabel, name);
+
       card.append(details, arrow);
 
       card.addEventListener("click", () => {
         localStorage.setItem(
- if (category === "bible") {
-  const selectedTopic = localStorage.getItem("selectedBibleTopic");
-
-  if (selectedTopic) {
-    window.location.href = "question-number.html";
-  } else {
-    window.location.href = "bible-topic.html";
-  }
-} else {
-  localStorage.removeItem("selectedBibleTopic");
-  localStorage.removeItem("selectedBibleTopicName");
-
-  window.location.href = "question-number.html";
-}
-  } else {
-    window.location.href = "bible-topic.html";
-  }
-} else {       "selectedArchdeaconry",
+          "selectedArchdeaconry",
           archdeaconry.name
         );
 
         if (category === "bible") {
-          window.location.href = "bible-topic.html";
+          const selectedTopic =
+            localStorage.getItem("selectedBibleTopic");
+
+          if (selectedTopic) {
+            window.location.href = "question-number.html";
+          } else {
+            window.location.href = "bible-topic.html";
+          }
         } else {
           localStorage.removeItem("selectedBibleTopic");
           localStorage.removeItem("selectedBibleTopicName");
+
           window.location.href = "question-number.html";
         }
       });
@@ -145,54 +156,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   categoryButtons.forEach(button => {
     button.addEventListener("click", () => {
-      const newCategory = normalizeCategory(button.dataset.category);
+      const newCategory =
+        normalizeCategory(button.dataset.category);
 
       if (!categories[newCategory]) return;
 
       category = newCategory;
-      if (newCategory !== "bible") {
-  localStorage.removeItem("selectedBibleTopic");
-  localStorage.removeItem("selectedBibleTopicName");
-}
+
+      if (category !== "bible") {
+        localStorage.removeItem("selectedBibleTopic");
+        localStorage.removeItem("selectedBibleTopicName");
+      }
+
       updateCategoryDisplay();
 
-      archdeaconryMessage.textContent =
-        `${categories[category]} selected. Choose an archdeaconry below.`;
+      if (archdeaconryMessage) {
+        archdeaconryMessage.textContent =
+          `${categories[category]} selected. Choose an archdeaconry below.`;
+      }
 
       renderArchdeaconries();
     });
   });
-const bibleTopicSwitcher = document.getElementById("bibleTopicSwitcher");
-const changeBibleTopicBtn = document.getElementById("changeBibleTopicBtn");
 
-if (bibleTopicSwitcher && category === "bible") {
-  bibleTopicSwitcher.style.display = "block";
-}
+  if (changeBibleTopicBtn) {
+    changeBibleTopicBtn.addEventListener("click", () => {
+      localStorage.removeItem("selectedBibleTopic");
+      localStorage.removeItem("selectedBibleTopicName");
 
-if (changeBibleTopicBtn) {
-  changeBibleTopicBtn.addEventListener("click", () => {
-    localStorage.removeItem("selectedBibleTopic");
-    localStorage.removeItem("selectedBibleTopicName");
+      window.location.href = "bible-topic.html";
+    });
+  }
 
-    window.location.href = "bible-topic.html";
-  });
-}
-  const bibleTopicSwitcher = document.getElementById("bibleTopicSwitcher");
-const changeBibleTopicBtn = document.getElementById("changeBibleTopicBtn");
-
-if (bibleTopicSwitcher) {
-  bibleTopicSwitcher.style.display =
-    category === "bible" ? "block" : "none";
-}
-
-if (changeBibleTopicBtn) {
-  changeBibleTopicBtn.addEventListener("click", () => {
-    localStorage.removeItem("selectedBibleTopic");
-    localStorage.removeItem("selectedBibleTopicName");
-
-    window.location.href = "bible-topic.html";
-  });
-}
   updateCategoryDisplay();
+
   renderArchdeaconries();
 });
