@@ -141,6 +141,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!categories[newCategory]) return;
 
       category = newCategory;
+      if (newCategory !== "bible") {
+  localStorage.removeItem("selectedBibleTopic");
+  localStorage.removeItem("selectedBibleTopicName");
+}
       updateCategoryDisplay();
 
       archdeaconryMessage.textContent =
