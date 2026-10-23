@@ -20,8 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getJSON(key, fallback) {
     try {
-      return JSON.parse(localStorage.getItem(key)) ?? fallback;
-    } catch {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value ?? fallback;
+    } catch (error) {
       return fallback;
     }
   }
@@ -66,10 +67,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let submitButton = null;
   let currentQuestion = null;
 
-  function showMessage(message) {
-    if (messageElement) {
-      messageElement.textContent = message;
-      messageElement.style.display = "block";
+  function showMessage(message, color = "") {
+    if (!messageElement) return;
+
+    messageElement.textContent = message;
+    messageElement.style.display = "block";
+
+    if (color) {
+      messageElement.style.color = color;
     }
   }
 
@@ -161,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // SAVE MARKS AND CORRECT QUESTION COUNTS
+  // SAVE SCORE AND CORRECT-ANSWER COUNTS
   function saveScore(isCorrect) {
     const scores = getJSON("quizScores", {});
 
@@ -175,10 +180,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (
       !scores[contestant] ||
-      typeof scores[contest] !== "object" ||
-      Array.isArray(scores[contest])
+      typeof scores[contestant] !== "object" ||
+      Array.isArray(scores[contestant])
     ) {
-      scores[contest] = {
+      scores[contestant] = {
         bible: 0,
         anglicanism: 0,
         current_affairs: 0,
@@ -188,13 +193,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contestantScores = scores[contestant];
 
-    // Ensure all category mark fields exist.
     ["bible", "anglicanism", "current_affairs"].forEach(key => {
       contestantScores[key] =
         Number(contestantScores[key]) || 0;
     });
 
-    // Ensure correct-answer counts exist.
     if (
       !contestantScores.correctQuestions ||
       typeof contestantScores.correctQuestions !== "object" ||
@@ -214,108 +217,38 @@ document.addEventListener("DOMContentLoaded", () => {
       correctCounts[key] = Number(correctCounts[key]) || 0;
     });
 
-    correctCounts.overall =
-      Number(correctCounts.overall) || 0;
+    correctCounts.overall = Number(correctCounts.overall) || 0;
 
-    // Award marks only for a correct answer.
     if (
-      Object.prototype.hasOwnProperty.call(
-        contestantScores,
-        category
-      )
+      Object.prototype.hasOwnProperty.call(contestantScores, category)
     ) {
       contestantScores[category] += isCorrect ? 5 : 0;
     }
 
-    // Count correct answers separately from marks.
     if (
       isCorrect &&
-      Object.prototype.hasOwnProperty.call(
-        correctCounts,
-        category
-      )
+      Object.prototype.hasOwnProperty.call(correctCounts, category)
     ) {
       correctCounts[category] += 1;
       correctCounts.overall += 1;
     }
 
-    // Recalculate overall marks.
     contestantScores.overall =
       contestantScores.bible +
       contestantScores.anglicanism +
       contestantScores.current_affairs;
 
-    localStorage.setItem(
-      "quizScores",
-      JSON.stringify(scores)
-    );
+    localStorage.setItem("quizScores", JSON.stringify(scores));
   }
 
   function returnToArchdeaconry() {
     window.location.href = "archdeaconry.html";
   }
 
+  function finishQuestion(isCorrect, timedOut = false) {
+    if (questionFinished) return;
 
-function finishQuestion(isCorrect, timedOut = false) {
-  if (questionFinished) return;
-
-  questionFinished = true;
-  stopTimer();
-
-  // Disable the submit button immediately.
-  if (submitButton) {
-    submitButton.disabled = true;
-  }
-
-  document.querySelectorAll(
-    'input[name="contestantAnswer"]'
-  ).forEach(input => {
-    input.disabled = true;
-  });
-
-  // SHOW FEEDBACK IMMEDIATELY.
-  if (messageElement) {
-    messageElement.style.display = "block";
-    messageElement.style.fontWeight = "bold";
-
-    if (timedOut) {
-      messageElement.textContent = "Time is up!";
-      messageElement.style.color = "red";
-    } else if (isCorrect) {
-      messageElement.textContent =
-        "Correct answer! 5 marks awarded.";
-
-      messageElement.style.color = "green";
-    } else {
-      messageElement.textContent = "Wrong answer!";
-      messageElement.style.color = "red";
-    }
-  }
-
-  // Reveal the correct answer immediately.
-  if (answerElement) {
-    answerElement.style.display = "block";
-
-    answerElement.textContent =
-      "Correct answer: " + currentQuestion.answer;
-
-    answerElement.style.color = "green";
-    answerElement.style.fontWeight = "bold";
-  }
-
-  // SAVE SCORE AFTER FEEDBACK IS DISPLAYED.
-  try {
-    saveScore(isCorrect);
-    markQuestionUsed();
-  } catch (error) {
-    console.error("Error saving quiz progress:", error);
-  }
-
-  // Return to the archdeaconry after 2.5 seconds.
-  setTimeout(returnToArchdeaconry, 2500);
-}
-
-
+    // Prevent duplicate submissions immediately.
     questionFinished = true;
     stopTimer();
 
@@ -329,10 +262,7 @@ function finishQuestion(isCorrect, timedOut = false) {
       input.disabled = true;
     });
 
-    saveScore(isCorrect);
-    markQuestionUsed();
-
-    // Display feedback.
+    // Show the result before doing any storage work.
     if (messageElement) {
       messageElement.style.display = "block";
       messageElement.style.fontWeight = "bold";
@@ -343,7 +273,6 @@ function finishQuestion(isCorrect, timedOut = false) {
       } else if (isCorrect) {
         messageElement.textContent =
           "Correct answer! 5 marks awarded.";
-
         messageElement.style.color = "green";
       } else {
         messageElement.textContent = "Wrong answer!";
@@ -351,17 +280,26 @@ function finishQuestion(isCorrect, timedOut = false) {
       }
     }
 
-    // Reveal correct answer.
     if (answerElement) {
-      answerElement.style.display = "block";
-
       answerElement.textContent =
         "Correct answer: " + currentQuestion.answer;
-
+      answerElement.style.display = "block";
       answerElement.style.color = "green";
       answerElement.style.fontWeight = "bold";
     }
 
+    // Let the browser paint the feedback first.
+    // Save progress on the next event-loop turn.
+    setTimeout(() => {
+      try {
+        saveScore(isCorrect);
+        markQuestionUsed();
+      } catch (error) {
+        console.error("Could not save quiz progress:", error);
+      }
+    }, 0);
+
+    // Keep the result visible briefly before returning.
     setTimeout(returnToArchdeaconry, 2500);
   }
 
@@ -406,7 +344,6 @@ function finishQuestion(isCorrect, timedOut = false) {
     numberElement.textContent = questionNumber;
   }
 
-  // Hide previous feedback.
   if (answerElement) {
     answerElement.style.display = "none";
     answerElement.textContent = "";
@@ -443,9 +380,7 @@ function finishQuestion(isCorrect, timedOut = false) {
 
       form.appendChild(input);
     } else {
-      const options = getOptions();
-
-      options.forEach((option, index) => {
+      getOptions().forEach((option, index) => {
         const label = document.createElement("label");
         label.className = "answer-option";
 
@@ -458,19 +393,16 @@ function finishQuestion(isCorrect, timedOut = false) {
 
         const optionText = document.createElement("span");
         optionText.className = "answer-option-text";
-
         optionText.textContent =
           String.fromCharCode(65 + index) + ". " + option;
 
         label.appendChild(radio);
         label.appendChild(optionText);
-
         form.appendChild(label);
       });
     }
 
     submitButton = document.createElement("button");
-
     submitButton.type = "submit";
     submitButton.className = "submit-button";
     submitButton.textContent = "Submit Answer";
@@ -495,9 +427,9 @@ function finishQuestion(isCorrect, timedOut = false) {
         showMessage(
           isFillBlank
             ? "Please enter your answer."
-            : "Please select an answer."
+            : "Please select an answer.",
+          "red"
         );
-
         return;
       }
 
@@ -506,7 +438,7 @@ function finishQuestion(isCorrect, timedOut = false) {
         : textInput.value.trim();
 
       if (!value) {
-        showMessage("Please enter your answer.");
+        showMessage("Please enter your answer.", "red");
         return;
       }
 
@@ -523,9 +455,9 @@ function finishQuestion(isCorrect, timedOut = false) {
     readButton.addEventListener("click", () => {
       if (!("speechSynthesis" in window)) {
         showMessage(
-          "Read-aloud is not supported in this browser."
+          "Read-aloud is not supported in this browser.",
+          "red"
         );
-
         return;
       }
 
@@ -543,7 +475,7 @@ function finishQuestion(isCorrect, timedOut = false) {
     });
   }
 
-  // TIMER
+  // 30-SECOND TIMER
   updateTimer();
 
   timerInterval = setInterval(() => {
