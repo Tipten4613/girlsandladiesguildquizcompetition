@@ -149,7 +149,21 @@ document.addEventListener("DOMContentLoaded", () => {
       renderArchdeaconries();
     });
   });
+const bibleTopicSwitcher = document.getElementById("bibleTopicSwitcher");
+const changeBibleTopicBtn = document.getElementById("changeBibleTopicBtn");
 
+if (bibleTopicSwitcher && category === "bible") {
+  bibleTopicSwitcher.style.display = "block";
+}
+
+if (changeBibleTopicBtn) {
+  changeBibleTopicBtn.addEventListener("click", () => {
+    localStorage.removeItem("selectedBibleTopic");
+    localStorage.removeItem("selectedBibleTopicName");
+
+    window.location.href = "bible-topic.html";
+  });
+}
   updateCategoryDisplay();
   renderArchdeaconries();
 });
