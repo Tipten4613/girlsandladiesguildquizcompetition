@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoryAliases = {
     bible: ["bible"],
     anglicanism: ["anglicanism"],
-    current_affairs: ["current affairs", "current_affairs"]
+    current_affairs: ["current_affairs", "current affairs"]
   };
 
   const podiumIds = {
@@ -93,11 +93,31 @@ document.addEventListener("DOMContentLoaded", () => {
           item => normalize(item.name) === normalize(contestant)
         );
 
-        if (!result || !totals || typeof totals !== "object") continue;
+        if (!result || !totals || typeof totals !== "object") {
+          continue;
+        }
 
         const bible = Number(totals.bible) || 0;
         const anglicanism = Number(totals.anglicanism) || 0;
         const currentAffairs = Number(totals.current_affairs) || 0;
+
+        const correctQuestions =
+          totals.correctQuestions &&
+          typeof totals.correctQuestions === "object"
+            ? totals.correctQuestions
+            : {};
+
+        const bibleCorrect =
+          Number(correctQuestions.bible) || 0;
+
+        const anglicanismCorrect =
+          Number(correctQuestions.anglicanism) || 0;
+
+        const currentAffairsCorrect =
+          Number(correctQuestions.current_affairs) || 0;
+
+        const overallCorrect =
+          Number(correctQuestions.overall) || 0;
 
         const hasCategoryData =
           ["bible", "anglicanism", "current_affairs"].some(
@@ -106,25 +126,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
         result.participated = hasCategoryData;
 
+        // Correct questions for the selected category.
         if (category === "overall") {
+          result.correct = overallCorrect;
+
           result.totalMarks =
             Number(totals.overall) ||
             bible + anglicanism + currentAffairs;
+        } else if (category === "bible") {
+          result.correct = bibleCorrect;
+          result.totalMarks = bible;
+        } else if (category === "anglicanism") {
+          result.correct = anglicanismCorrect;
+          result.totalMarks = anglicanism;
+        } else if (category === "current_affairs") {
+          result.correct = currentAffairsCorrect;
+          result.totalMarks = currentAffairs;
         } else {
-          const aliases = categoryAliases[category] || [category];
-
-          result.totalMarks = aliases.reduce(
-            (sum, key) => sum + (Number(totals[key]) || 0),
-            0
-          );
+          result.correct = 0;
+          result.totalMarks = 0;
         }
       }
     } else {
+      // Compatibility with the older scores array format.
       const entries = scoreData.data;
 
       results.forEach(result => {
         const matching = entries.filter(score => {
-          if (!score || normalize(score.archdeaconry) !== normalize(result.name)) {
+          if (
+            !score ||
+            normalize(score.archdeaconry) !== normalize(result.name)
+          ) {
             return false;
           }
 
@@ -136,13 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (matching.length > 0) {
           result.participated = true;
+
           result.totalMarks = matching.reduce(
-            (sum, score) => sum + (Number(score.marks) || 0),
+            (sum, score) =>
+              sum + (Number(score.marks) || 0),
             0
           );
 
           result.correct = matching.filter(score =>
-            score.correct === true || score.correct === "true"
+            score.correct === true ||
+            score.correct === "true"
           ).length;
         }
       });
@@ -163,13 +198,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updatePodium(place, result) {
     const container = document.getElementById(podiumIds[place]);
+
     if (!container) return;
 
     const name = container.querySelector(".podium-name");
     const score = container.querySelector(".podium-score");
 
-    if (name) name.textContent = result ? result.name : "Awaiting competitor";
-    if (score) score.textContent = result ? `${result.totalMarks} marks` : "0 marks";
+    if (name) {
+      name.textContent = result
+        ? result.name
+        : "Awaiting competitor";
+    }
+
+    if (score) {
+      score.textContent = result
+        ? `${result.totalMarks} marks`
+        : "0 marks";
+    }
 
     container.classList.toggle("no-competitor", !result);
   }
@@ -191,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const score = document.createElement("span");
     score.className = "ranking-score";
+
     score.textContent = result.participated
       ? `${result.totalMarks} marks`
       : "Absent";
@@ -201,13 +247,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (position === 1) item.classList.add("rank-gold");
     if (position === 2) item.classList.add("rank-silver");
     if (position === 3) item.classList.add("rank-bronze");
-    if (!result.participated) item.classList.add("rank-absent");
+
+    if (!result.participated) {
+      item.classList.add("rank-absent");
+    }
 
     return item;
   }
 
   function renderRankings(results) {
-    const participants = results.filter(result => result.participated);
+    const participants = results.filter(
+      result => result.participated
+    );
+
     const top = participants.slice(0, 10);
 
     updatePodium(1, top[0]);
@@ -223,20 +275,31 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bottom) bottom.replaceChildren();
 
     top.slice(0, 5).forEach((result, index) => {
-      if (left) left.appendChild(createRankingItem(result, index + 1));
+      if (left) {
+        left.appendChild(
+          createRankingItem(result, index + 1)
+        );
+      }
     });
 
     top.slice(5, 10).forEach((result, index) => {
-      if (right) right.appendChild(createRankingItem(result, index + 6));
+      if (right) {
+        right.appendChild(
+          createRankingItem(result, index + 6)
+        );
+      }
     });
 
     top.slice(0, 5).forEach((result, index) => {
       if (!bottom) return;
 
       const card = document.createElement("div");
-      card.className = `bottom-rank-card rank-card-${index + 1}`;
+
+      card.className =
+        `bottom-rank-card rank-card-${index + 1}`;
 
       const number = document.createElement("span");
+
       number.className = "bottom-rank-number";
       number.textContent = String(index + 1);
 
@@ -244,6 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
       name.textContent = result.name;
 
       const score = document.createElement("span");
+
       score.textContent = `${result.totalMarks} marks`;
 
       card.append(number, name, score);
@@ -255,8 +319,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!container) return;
 
         const empty = document.createElement("p");
+
         empty.className = "empty-leaderboard";
-        empty.textContent = "No competitors have scores yet.";
+        empty.textContent =
+          "No competitors have scores yet.";
+
         container.appendChild(empty);
       });
     }
@@ -269,12 +336,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const categoryName = categoryNames[category] || "Bible";
+
     title.textContent = `${categoryName} Scoreboard`;
 
-    document.body.classList.toggle("overall-mode", category === "overall");
-    table.classList.toggle("overall-table", category === "overall");
+    document.body.classList.toggle(
+      "overall-mode",
+      category === "overall"
+    );
+
+    table.classList.toggle(
+      "overall-table",
+      category === "overall"
+    );
 
     const results = getResults(category);
+
     tableBody.replaceChildren();
 
     results.forEach((result, index) => {
@@ -288,8 +364,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
       row.appendChild(createCell(index + 1));
       row.appendChild(createCell(result.name));
-      row.appendChild(createCell(result.participated ? result.correct : "Absent"));
-      row.appendChild(createCell(result.participated ? result.totalMarks : "Absent"));
+
+      row.appendChild(
+        createCell(
+          result.participated
+            ? result.correct
+            : "Absent"
+        )
+      );
+
+      row.appendChild(
+        createCell(
+          result.participated
+            ? result.totalMarks
+            : "Absent"
+        )
+      );
 
       tableBody.appendChild(row);
     });
@@ -302,30 +392,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (message) {
       message.textContent =
-        `${participantCount} of ${archdeaconries.length} archdeaconries participated in ${categoryName}.`;
+        `${participantCount} of ${archdeaconries.length} ` +
+        `archdeaconries participated in ${categoryName}.`;
     }
   }
 
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
       tabs.forEach(item => item.classList.remove("active"));
+
       tab.classList.add("active");
+
       displayScoreboard(tab.dataset.category);
     });
   });
 
-  const activeTab = document.querySelector(".category-tab.active");
-  displayScoreboard(activeTab?.dataset.category || "bible");
+  const activeTab = document.querySelector(
+    ".category-tab.active"
+  );
+
+  displayScoreboard(
+    activeTab?.dataset.category || "bible"
+  );
 
   window.addEventListener("pageshow", () => {
-    const selectedTab = document.querySelector(".category-tab.active");
-    displayScoreboard(selectedTab?.dataset.category || "bible");
+    const selectedTab = document.querySelector(
+      ".category-tab.active"
+    );
+
+    displayScoreboard(
+      selectedTab?.dataset.category || "bible"
+    );
   });
 
   window.addEventListener("storage", event => {
-    if (event.key === "quizScores" || event.key === "scores") {
-      const selectedTab = document.querySelector(".category-tab.active");
-      displayScoreboard(selectedTab?.dataset.category || "bible");
+    if (
+      event.key === "quizScores" ||
+      event.key === "scores"
+    ) {
+      const selectedTab = document.querySelector(
+        ".category-tab.active"
+      );
+
+      displayScoreboard(
+        selectedTab?.dataset.category || "bible"
+      );
     }
   });
 
@@ -342,15 +453,23 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.removeItem("usedQuestions");
       localStorage.removeItem("usedQuestionKeys");
 
-      const selectedTab = document.querySelector(".category-tab.active");
-      displayScoreboard(selectedTab?.dataset.category || "bible");
+      const selectedTab = document.querySelector(
+        ".category-tab.active"
+      );
+
+      displayScoreboard(
+        selectedTab?.dataset.category || "bible"
+      );
 
       window.alert(
         "Competition reset. Saved scores and used-question records were cleared. Imported questions were kept."
       );
     } catch (error) {
       console.error("Unable to reset competition:", error);
-      window.alert("Reset failed. Please check the browser Console.");
+
+      window.alert(
+        "Reset failed. Please check the browser Console."
+      );
     }
   });
 });
