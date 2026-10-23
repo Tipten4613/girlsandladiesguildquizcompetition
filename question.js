@@ -173,9 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.getItem("teamName") ||
       "Contestant";
 
-    if (!scores[contestant] ||
-        typeof scores[contestant] !== "object") {
-      scores[contestant] = {
+    if (
+      !scores[contestant] ||
+      typeof scores[contest] !== "object" ||
+      Array.isArray(scores[contest])
+    ) {
+      scores[contest] = {
         bible: 0,
         anglicanism: 0,
         current_affairs: 0,
@@ -185,20 +188,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contestantScores = scores[contestant];
 
-    // Preserve existing marks.
-    const points = isCorrect ? 5 : 0;
+    // Ensure all category mark fields exist.
+    ["bible", "anglicanism", "current_affairs"].forEach(key => {
+      contestantScores[key] =
+        Number(contestantScores[key]) || 0;
+    });
 
-    if (Object.prototype.hasOwnProperty.call(
-      contestantScores,
-      category
-    )) {
-      contestantScores[category] =
-        (Number(contestantScores[category]) || 0) + points;
-    }
-
-    // Initialize correct question counts.
-    if (!contestantScores.correctQuestions ||
-        typeof contestantScores.correctQuestions !== "object") {
+    // Ensure correct-answer counts exist.
+    if (
+      !contestantScores.correctQuestions ||
+      typeof contestantScores.correctQuestions !== "object" ||
+      Array.isArray(contestantScores.correctQuestions)
+    ) {
       contestantScores.correctQuestions = {
         bible: 0,
         anglicanism: 0,
@@ -209,24 +210,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const correctCounts = contestantScores.correctQuestions;
 
-    // Add one correct question only when the answer is correct.
-    if (isCorrect &&
-        Object.prototype.hasOwnProperty.call(
-          correctCounts,
-          category
-        )) {
-      correctCounts[category] =
-        (Number(correctCounts[category]) || 0) + 1;
+    ["bible", "anglicanism", "current_affairs"].forEach(key => {
+      correctCounts[key] = Number(correctCounts[key]) || 0;
+    });
 
-      correctCounts.overall =
-        (Number(correctCounts.overall) || 0) + 1;
+    correctCounts.overall =
+      Number(correctCounts.overall) || 0;
+
+    // Award marks only for a correct answer.
+    if (
+      Object.prototype.hasOwnProperty.call(
+        contestantScores,
+        category
+      )
+    ) {
+      contestantScores[category] += isCorrect ? 5 : 0;
+    }
+
+    // Count correct answers separately from marks.
+    if (
+      isCorrect &&
+      Object.prototype.hasOwnProperty.call(
+        correctCounts,
+        category
+      )
+    ) {
+      correctCounts[category] += 1;
+      correctCounts.overall += 1;
     }
 
     // Recalculate overall marks.
     contestantScores.overall =
-      (Number(contestantScores.bible) || 0) +
-      (Number(contestantScores.anglicanism) || 0) +
-      (Number(contestantScores.current_affairs) || 0);
+      contestantScores.bible +
+      contestantScores.anglicanism +
+      contestantScores.current_affairs;
 
     localStorage.setItem(
       "quizScores",
@@ -354,7 +371,6 @@ document.addEventListener("DOMContentLoaded", () => {
       type === "fillinthegap";
 
     const form = document.createElement("form");
-
     form.id = "contestantAnswerForm";
 
     if (isFillBlank) {
@@ -373,7 +389,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       options.forEach((option, index) => {
         const label = document.createElement("label");
-
         label.className = "answer-option";
 
         const radio = document.createElement("input");
@@ -384,7 +399,6 @@ document.addEventListener("DOMContentLoaded", () => {
         radio.required = true;
 
         const optionText = document.createElement("span");
-
         optionText.className = "answer-option-text";
 
         optionText.textContent =
@@ -404,7 +418,6 @@ document.addEventListener("DOMContentLoaded", () => {
     submitButton.textContent = "Submit Answer";
 
     form.appendChild(submitButton);
-
     optionsElement.appendChild(form);
 
     form.addEventListener("submit", event => {
@@ -466,7 +479,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ].join(". ");
 
       const speech = new SpeechSynthesisUtterance(textToRead);
-
       speech.lang = "en-NG";
 
       window.speechSynthesis.speak(speech);
@@ -483,7 +495,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     seconds--;
-
     updateTimer();
 
     if (seconds <= 0) {
